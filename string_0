@@ -1,0 +1,145 @@
+Mảng trong system Verilog:
+
++ Fixed-size array: là mảng được định nghĩa kích thước ban đầu cố định và kích thước của mảng thì được thiết lập tại bước compile. Ví dụ một số định nghĩa như bên dưới:
+Int mang [3] ;
+Int mang1 [0:2];
+Int mang2 [2:0];
+Tất cả trường hợp trên đều đúng. Tuy nhiên vị trí gắn vào sẽ khác nhau phụ thuộc vào cách định nghĩa của chúng ta. Để biết thêm ta cần xem xét các trường hợp gán giá trị bên dưới:
+Int mang [2] = ‘{0, 1};
+Với trường hợp này ta có phần tử mang[0] = 0 và mang[1] = 1.
+Xém một trường hợp khác đó là 
+Int mang [0:1] = ‘{0, 1};
+Đây là cách định nghĩa tương đương với trường hợp trên  tức là mang[0] = 0 và mang[1] = 1. Nhiều bạn sẽ tự hỏi thế với cách định nghĩa như bên dưới là đúng hay sai:
+Int mang [1:0] = ‘{0, 1};
+Câu trả lời là hoàn toàn chính xác nhé.  Tuy nhiên, việc gán giá trị cho các mảng là khác nhau trong trường hợp này ta sẽ có mang[1] = 0 và mang[0] = 1.
+Đến đây chúng ta lại có thêm một thắc mắc khác là dấu “ ’ ” có ý nghĩa gì. Dấu này có nghĩa là giúp bạn xác định độ rộng của phần tử mảng. điều này rất cần thiết nếu như bạn có một mảng đa chiều. tuy nhiên, với mảng một chiều chúng ta có thể bỏ dấu đó đi và hoàn toàn ko bị lỗi gì cả.
+Cách định nghĩa cho một mảng hai chiều như thế nào nhỉ:
+Int mang [2] [2] ;
+Int mang [2] [2] = ‘{‘{1, 0}, ‘{1, 0}};
+Ta không thể bỏ dấu “ ‘ “ đi vì lúc này system Verilog không thể xác định được độ rộng của từng chiều được.
+
+Mảng linh hoạt: Là mảng mà kích thước của mảng được thiết lập tại bước run. Khi được khai báo ta không biết được kích thước của mảng là bao nhiêu và kích thước của mảng sẽ được thiết lập tại bước run.
+Khi chúng ta không khởi tạo kích thước của mảng thì giá trị mặc định là 0. Câu lệnh khai báo như bên dưới:
+<Kiểu dữ liệu>  <Tên mảng>  [];
+Ví dụ như bên dưới:
+Int mang [];
+Vì kích thước của mảng được thiết lập tại bước run. Nên việc khai báo kích thước phải nằm trong cấu trúc:
+Initial begin
+Mang = new[5];
+….
+End
+Bây giờ nếu ta khởi tạo kích thước của mảng nhưng không khởi tạo giá trị ban đầu cho mảng thì giá trị mặc định sẽ bằng 0 cho tất cả các giá trị ví dụ như ta có chương trình như bên dưới: 
+module test (output logic b);
+int mang [];
+   initial begin
+     mang = new[2];
+     $display("%d",mang[0]);
+   end
+endmodule
+
+Giá trị in ra sẽ là 0. Trong ví dụ trên nếu chúng ta bỏ dòng “mang = new[2];” đi thì kết quả vẫn bằng 0 và error không xuất hiện.
+Nghĩa là khi chúng ta không gán giá trị cho các biến của mảng ban đầu thì giá trị mặc định sẽ là 0.
+Mảng linh hoạt trong system Verilog còn hỗ trợ 3 method đó là : new (như chúng ta đã biết ở ví dụ trên), size (trích xuất kích thước của mảng), delete (xoá các giá trị của mảng).
+Cú pháp như bên dưới: 
+A = mang.size;
+mang.delete;
+ 
+từ đầu đến giờ ta chỉ lấy ví dụ cho mảng linh hoạt 1 chiều, vậy mảng linh hoạt nhiều chiều thì sẽ như thế nào ?
+Tôi có một chương trình như bên dưới:
+
+module test (output logic b);
+int mang [][];
+
+   initial begin
+     mang = new[2][2];
+     mang[1][1] = 8;
+     $display("%d",mang[1][1]);
+   end
+
+endmodule
+Khi bạn compile chương trình này tôi chắc với bạn là bạn sẽ bị báo lỗi ngay tại dòng “mang = new[2][2];” vì sao ư? Rất đơn giản thứ nhất với method “new” bạn chỉ có thể sữ dụng cho mảng một chiều tại một thời điểm nhất định nhưng trong ví dụ trên bạn đang define cho 2 chiều của mảng tại cùng một thời điểm. Vậy giờ ta thử bỏ dòng “mang = new[2][2];” và chạy lại nhé.  
+Lúc này system Verilog sẽ không báo lối nhưng sẽ có 1 warning và kết quả ra sẽ bằng 0 chứ không bằng 8 như ta gán trong vòng “initial begin… end”
+Ta có dòng warining như bên dưới:
+
+     mang[1][1] = 8;
+        |
+ncsim: *W,RTSDAD (./test.sv,6|8): SystemVerilog dynamic array index 1 does not exist, 0 items are in the dynamic array.
+
+Bây giờ có cách nào để ta dung hàm new cho các chiều của mảng không. Câu trả lời là có nhé.
+Có 2 cách: Đầu tiên ta thay dòng bị báo lỗi lúc nảy bằng dòng:
+mang = '{2{'{2{0}}}};
+Lúc này ta xác định kích thước của mảng là 2x2 và giá trị ban đầu cho từng phần tử là 0.
+Kết quả chạy mô phỏng lúc này là hoàn toàn chính xác.
+Bây giờ ta thử cách thứ hai đó là thay dòng báo lỗi bằng các dòng lệnh:
+     mang = new[2];
+        foreach (mang[i]) begin
+        mang[i] = new[2];
+     end
+Với code bên trên ta đang tiến hành thực hiện khai báo size cho chiều thứ nhất. Tương ứng với mỗi chiều ta lại khai báo size cho từng phần tử trong chiều thứ nhất.
+Kết quả simulation vẫn đúng.
+Ngoài ra trong mảng linh hoạt ta cũng có hỗ trợ 1 tính năng mở rộng mảng và giữ lại các giá trị đã có. Giả sử ta có chương trình như bên dưới:
+ module test (output logic b);
+int mang [], mang_2 [];
+   initial begin
+     mang = new[2];
+     mang[1] = 1;
+     mang[0] = 0;
+     foreach (mang[i]) begin
+        $display("mang[%d] : %d",i,mang[i]);
+     end
+     $display("mang 2");
+     mang_2 = new[4](mang);
+     foreach (mang_2[j]) begin
+        $display("mang_2[%d] : %d",j,mang_2[j]);
+     end
+   end
+endmodule
+
+Kết quả ra sẽ như bên dưới:
+mang[          0] :           0
+mang[          1] :           1
+mang 2
+mang_2[          0] :           0
+mang_2[          1] :           1
+mang_2[          2] :           0
+mang_2[          3] :           0
+ 
+Điều này chứng tỏ là mảng mang_2 đã copy các phần tử từ mảng mang qua và thêm hai phần tử mới.
+Như vậy mảng có tính năng copy và thêm mới.
+Bây giờ ta thêm dòng lệnh màu đỏ để xem kết quả như thế nào nhé:
+module test (output logic b);
+int mang [], mang_2 [];
+
+   initial begin
+     mang = new[2];
+     mang[1] = 1;
+     mang[0] = 0;
+     foreach (mang[i]) begin
+        $display("mang[%d] : %d",i,mang[i]);
+     end
+     $display("mang 2");
+     mang_2 = new[4](mang);
+     mang_2 = new[4];
+     foreach (mang_2[j]) begin
+        $display("mang_2[%d] : %d",j,mang_2[j]);
+     end
+   end
+
+endmodule
+
+Với dòng lệnh này kết quả in ra sẽ là:
+mang[          0] :           0
+mang[          1] :           1
+mang 2
+mang_2[          0] :           0
+mang_2[          1] :           0
+mang_2[          2] :           0
+mang_2[          3] :           0 
+Điều này có nghĩa là khi ta thêm dòng lệnh new thì các giá trị cũ bị mất đi và ta đang khởi tạo mới cho mảng.
+
+Kiểu Queues:
+
+
+
+
+
