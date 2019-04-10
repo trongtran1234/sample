@@ -1,0 +1,148 @@
+Kiểu dữ liệu người dùng định nghĩa
+Trong bài này ta sẽ tìm hiểu kiểu dữ liệu người dùng định nghĩa trong ngôn ngữ system Verilog (Hay còn gọi là Enumerated type).
+Cú pháp:
+typedef   enum    kiểu_dữ_liệu     {biến 1, biến 2,…, biến n}       tên_kiểu_dữ_liệu_enum;
+Nếu ta không khai báo kiểu dữ liệu thì giá trị mặc định của các phần tử trong cặp dấu “{}” sẽ là kiểu integer.
+Ta có một số ví dụ như bên dưới.
+typedef enum {blue, red, yellow} basic_color;
+typedef enum bit[1:0] {smile, cry, play} people_activity;
+
+Cú pháp khai báo một biến với kiểu dữ liệu enum:
+Tên_kiểu_dữ_liệu_enum    tên_biến;
+Ví dụ: 
+basic_color     screen_color;
+people_activity  date_end;
+
+Với cách định nghĩa bên trên ta có biến screen_color sẽ có thể mang các giá trị blue hoặc red hoặc yellow (Tuý người dùng khai báo phía trong chương trình).
+Vậy bạn có khi nào thắc mắc là các biến blue, red, yellow mang giá trị gì không. Tôi  đặt giả thiết rằng các biến blue, red, yellow chỉ đơn thuần là các kí tự string.  Điều này dẫn đến một mâu thuẫn. Tại sao ư,  bởi vì kiểu định nghĩa enum hoàn toàn có thể tổng hợp được (synthesis). Nghĩa là nó phải mang giá trị gì đó. Bây giờ chúng ta làm một ví dụ nhỏ bên dưới:
+module test ();
+  typedef enum {blue, red, yellow} basic_color;
+  basic_color color;
+   initial begin
+      $display("color = %d", color);      // color = 0
+
+      color = blue;
+      $display("color_blue = %d", color);   // color_blue = 0
+      color = red;
+      $display("color_red = %d", color); // color_red = 0
+      color = yellow;
+      $display("color_yellow = %d", color); // color_yellow =0
+   end
+endmodule
+
+Dưới đây là kết quả:
+color = 0
+color_blue = 0
+color_red = 1
+color_yellow =  2
+
+
+Như vậy khi ta chưa gán giá trị cho kiểu dữ liệu enum thì giá trị mặc định là 0.
+Và theo thứ tự trong cặp dấu {}, giá trị đầu tiên sẽ là 0, tiếp theo là 1,2,3…n. Điều ta cần lưu ý ở đây là phải định nghĩa đúng thứ tự cho các biến trong kiểu enum nếu bạn muốn tham chiếu đến giá trị thực của nó. Có một cách đơn giản để thay đổi các giá trị này là gán trực tiếp giá trị khi ta định nghĩa kiểu dữ liệu enum. Tôi lấy ví dụ:
+typedef enum {blue=3, red, yellow} basic_color;
+Khi đó giá trị chứa trong biến blue = 3, red = 4, và yellow = 5.
+Nếu ta định nghĩa như sau:
+typedef enum {blue, red=4, yellow} basic_color;
+Khi đó giá trị chứa trong biến blue = 0, red = 4, yellow = 5.
+Như ta biết trong các ví dụ trên giá trị của các biến blue, red, yellow mặc định thuộc kiểu integer (Vì ta không định nghĩa kiểu dữ liệu ban đầu).
+Bây giờ ta thử thay đổi các giá trị đó sang kiểu binary nhé, Cùng xét ví dụ sau:
+module test ();
+typedef enum {blue, red=4'b1000, yellow} basic_color;
+basic_color color;
+   initial begin
+      $display("color = %d", color);
+      color = blue;
+      $display("color_blue = %d", color);
+      color = red;
+      $display("color_red = %d", color);
+      color = yellow;
+      $display("color_yellow = %d", color);
+   end
+endmodule
+Và đây là kết quả:
+
+color =           0
+color_blue =           0
+color_red =           8
+color_yellow =           9
+Chương tình hoàn toàn không có lỗi và nếu biến đứng sau không được gán giá trị thì giá trị mặc định sẽ bằng giá trị trước đó cộng với 1.
+Một số lỗi bạn thường hay gặp phải khi định nghĩa kiểu dữ liệu enum:
++ Lỗi cơ bản nhất mà người dùng thường hay gặp phải đó là khai báo các biến trong dấu “{}” mang giá trị bằng nhau.  
+typedef enum {A=8, B, C, D = 10} number_tmp;
+Trong cách định nghĩa trên A = 8, vì B không được gán giá trị nên B= A + 1 = 9, và C = 10. Lúc này giá trị của C và D bằng nhau. Một lỗi sẽ xảy ra.
+Vì kiểu typedef thường được sử dụng trong FSM (Máy trạng thái hữu hạn) nên việc các giá trị trùng nhau (hoặc các trạng thái khác nhau mà giống nhau về giá trị) là không được chấp nhận.
++ Lỗi thứ hai liên quan đến việc khai báo các biến trong cặp dấu “{}”bắt đầu với 1 số.
+Điều này cũng không được phép. Tôi lấy ví dụ như sau:
+Typedef enum {123A, 234B, C} num_char;
+Trình biên dịch sẽ báo lỗi này.
++ Lỗi thứ 3 là khi ta khai báo số bit của các phần tử trong cặp dấu “{}” không đủ để phân biệt các thành phần hiện có trong dấu “{}”.
+Ví dụ:
+Typedef enum bit[1:0] {A, B, C, D, E, F, G, H} character;
+Như đã đề cặp bên trên các phần tử trong dấu “{}” không được phép mang các giá trị giống nhau. Tuy nhiên ta có hai bit dữ liệu để phân biệt 8 phần tử. Điều này là bất khả thi vì với 2 bit ta chỉ có thể phân biệt 4 phần tử bao gồm : 00, 01, 10, 11.
+
+Method trong kiểu dữ liệu enum.
+Để dễ dàng hiểu được vấn đề tôi lấy một ví dụ như bên dưới:
+typedef enum {people_0, people_1, people_2, people_3, people_4} people;
+people people_smile;
+people people_cry;
+Initial begin
+people_smile = people_2;
+……
+end
+
+Cá nhân tôi chia 8 method cho kiểu dữ liệu enum.
+first : Lấy phần tử đầu tiên trong kiểu dữ liệu enum.
+people_cry = people_smile.first();    // Kết quả là people_0
+Last : Lấy phần tử cuối cùng trong kiểu dữ liệu enum.
+people_cry = people_smile.last(); // Kết quả là people_4
+next : Lấy phần từ kế tiếp từ phần tử hiện tại theo thứ tự trong “{}”.
+people_cry = people_smile.next(); // Kết quả là people_3
+prev: Lấy phần tử trước phần tử hiện tại theo thứ tự trong “{}”.
+people_cry = people_smile.prev(); // Kết quả là people_1
+num: Tính toán tổng số phần tử có trong dấu “{}”. Nghĩa là các giá trị có thể có.
+int num_total  = people_smile.num(); // Kết quả là   5
+name: Trả về tên của phần tử hiện tại.
+string name_of_current  = people_smile.name(); // Kết quả là   people_2.
+next(N): lấy phần tử kế tiếp thứ N của phần tử hiện tại.
+people_cry = people_smile.next(2); // Kết quả là people_4
+prev(N): Lấy phần tử phía trước N vị trí của phần tử hiện tại.
+people_cry = people_smile.prev(2); // Kết quả là people_0
+Như vậy ta đã tìm hiểu toàn bộ các method của kiểu dữ liệu enum.
+
+Dưới đây là một số cách khai báo ngoại lệ:
+// BLACK0 = 0, BLACK1 = 1, BLACK2 = 2, BLACK3 = 3
+typedef enum {BLACK[4]} color_set_3;   
+// RED0 = 5, RED1 = 6, RED2 = 7
+typedef enum {RED[3] = 5} color_set_4;  
+// YELLOW3 = 0, YELLOW4 = 1, YELLOW5 = 2
+typedef enum {YELLOW[3:5]} color_set_5;  
+// WHITE3 = 4, WHITE4 = 5, WHITE5 = 6
+typedef enum {WHITE[3:5] = 4} color_set_6;
+
+
+Một điều bâng khuâng nữa là nếu ta khai báo biến enum các giá trị nằm ngoài “{}” thì sao.
+Typedef enum { A=2, B, C} num;
+Initial begin
+Num number_tmp;
+number_tmp = 0;
+End
+
+Cách khia báo như trên, Biến number_tmp vẫn mang giá trị được gán tuy nhiên một số method sẽ không hoạt động ví dụ như method name() chẳng hạn.
+Nếu ta thay thế dòng number_tmp = 0 bởi dòng 
+Number_tmp = 3;
+Thì  khi ta dùng method number_tmp.name() giá trị in ra là “B”. Nghĩa là bằng giá trị với tham số thì biến có thể tham chiếu đến tên biến.
+Có một cách định nghĩa khác nữa là:
+number_tmp = num’(1);
+
+
+
+
+
+
+
+Tại sao chúng ta cần kiểu định nghĩa này. Tôi lấy ví dụ khi bạn muốn lập trình một chương trình điều khiển đèn giao thông, chúng ta có ba trạng thái cần biểu thị đó là : blue (Đèn xanh), red (Đèn đỏ) và yellow (đèn vàng). Có nhiều cách để các bạn biểu thị trong FSM (máy trạng thái hữu hạn). Chẳng hạn, Bạn định nghĩa parameter như bên dưới:
+parameter BLUE = 2’b00;
+parameter RED = 2’b01;
+parameter YELLOW = 2’b10;
+Điều này cũng tương đương với việc bạn sử dụng kiểu định nghĩa enum. Nói tóm lại, Kiểu định nghĩa enum giúp người đọc dễ hình dung code hơn đồng thời tăng khả năng đọc hiểu của người code. Bạn cũng có thể dễ dàng re-use các code có sẵn và chỉnh sửa lại.
+
