@@ -1,0 +1,303 @@
+Mảng trong system Verilog
+TrongTran – Tay Ninh
+
+1.	Mảng cố định kích thước (Fixed-size array).
+Fixed-size array: là mảng được định nghĩa kích thước ban đầu cố định và kích thước của mảng thì được thiết lập tại bước compile. Ta có một số định nghĩa như bên dưới:
+Int str[3] ; // là mảng có các phần tử kiểu integer và gồm có 3 phần tử.
+Int str_1[0:2]; // là mảng có các phần tử kiểu integer và gồm có 3 phần tử.
+Int str_2[2:0]; // là mảng có các phần tử kiểu integer và gồm có 3 phần tử.
+Tất cả trường hợp trên đều định nghĩa mảng có các phần tử kiểu integer và có kích thước là 3. Tuy nhiên, vị trí gắn vào sẽ khác nhau phụ thuộc vào cách định nghĩa của chúng ta. Để biết thêm ta cần xem xét các trường hợp gán giá trị bên dưới:
+Int str[2] = ‘{0, 1};
+Với trường hợp này ta có phần tử str[0] = 0 và str[1] = 1.
+Xém một trường hợp khác đó là 
+Int str_1[0:1] = ‘{0, 1};
+Đây là cách định nghĩa tương đương với trường hợp trên  tức là str_1[0] = 0 và str_1[1] = 1. Nhiều bạn sẽ tự hỏi thế với cách định nghĩa như bên dưới là đúng hay sai:
+Int str_2[1:0] = ‘{0, 1};
+Câu trả lời là hoàn toàn chính xác nhé.  Tuy nhiên, việc gán giá trị cho các mảng là khác nhau trong trường hợp này ta sẽ có str_2[1] = 0 và str_2[0] = 1.
+Đến đây chúng ta lại có thêm một thắc mắc khác là dấu “ ’ ” có ý nghĩa gì. Dấu này có nghĩa là giúp bạn xác định độ rộng của phần tử mảng. Điều này rất cần thiết nếu như bạn có một mảng đa chiều. Tuy nhiên, với mảng một chiều chúng ta có thể bỏ dấu “ ‘ “ đi và compile không bị lỗi gì cả.
+Bây giờ ta sẽ tìm hiểu định nghĩa cho một mảng hai chiều (hoặc đa chiều):
+Int str[2] [2] ;
+Int str[2] [2] = ‘{‘{1, 0}, ‘{1, 0}};
+Ta không thể bỏ dấu “ ‘ “ đi vì lúc này system Verilog không thể xác định được độ rộng của từng chiều được.
+Một lưu ý nữa là với loại mảng cố định kích thước không hỗ trợ các method như : size, delete, insert……
+Nếu bạn sử dụng chúng khi compile một lỗi sẽ xuất hiện.
+
+
+2.	Mảng linh hoạt.
+
+Mảng linh hoạt: Là mảng mà kích thước của mảng được thiết lập tại bước run. Khi được khai báo ta không biết được kích thước của mảng là bao nhiêu và kích thước của mảng sẽ được thiết lập tại bước run.
+Khi chúng ta không khởi tạo kích thước của mảng thì giá trị mặc định là 0. Ta có câu lệnh khai báo như bên dưới:
+<Kiểu dữ liệu>  <Tên mảng>  [];
+Ta có ví dụ cụ thể như sau:
+Int mang [];
+Vì kích thước của mảng được thiết lập tại bước run. Nên việc khai báo kích thước phải nằm trong cấu trúc:
+Initial begin
+Mang = new[5];
+….
+End
+Bây giờ nếu ta khởi tạo kích thước của mảng nhưng không khởi tạo giá trị ban đầu cho mảng thì giá trị mặc định sẽ bằng 0 cho tất cả các giá trị ví dụ như ta có chương trình như bên dưới: 
+module test (output logic b);
+int mang [];
+   initial begin
+     mang = new[2];
+     $display("%d",mang[0]);
+   end
+endmodule
+
+Giá trị in ra sẽ là 0. Trong ví dụ trên nếu chúng ta bỏ dòng “mang = new[2];” đi thì kết quả vẫn bằng 0 và error không xuất hiện.
+Nghĩa là khi chúng ta không khởi tạo kích thước của mảng thì giá trị mặc định sẽ là 0.
+Mảng linh hoạt trong system Verilog còn hỗ trợ 3 method đó là : new (như chúng ta đã biết ở ví dụ trên), size (trích xuất kích thước của mảng), delete (xoá các giá trị của mảng).
+Cú pháp như bên dưới: 
+A = mang.size;
+mang.delete;
+ 
+Từ đầu đến giờ ta chỉ lấy ví dụ cho mảng linh hoạt 1 chiều, vậy mảng linh hoạt nhiều chiều thì sẽ như thế nào ?
+Tôi có một chương trình như bên dưới:
+
+module test (output logic b);
+int mang [][];
+
+   initial begin
+     mang = new[2][2];
+     mang[1][1] = 8;
+     $display("%d",mang[1][1]);
+   end
+
+endmodule
+Khi bạn compile chương trình này tôi chắc với bạn là bạn sẽ bị báo lỗi ngay tại dòng “mang = new[2][2];” vì sao ư? Rất đơn giản thứ nhất với method “new” bạn chỉ có thể sữ dụng cho mảng một chiều tại một thời điểm nhất định nhưng trong ví dụ trên bạn đang khởi tạo cho 2 chiều của mảng tại cùng một thời điểm. Vậy giờ ta thử bỏ dòng “mang = new[2][2];” và chạy lại nhé.  
+Lúc này system Verilog sẽ không báo lỗi nhưng sẽ có 1 warning và kết quả ra sẽ bằng 0 chứ không bằng 8 như ta gán trong vòng “initial begin… end”
+Ta có dòng warning như bên dưới:
+
+     mang[1][1] = 8;
+        |
+ncsim: *W,RTSDAD (./test.sv,6|8): SystemVerilog dynamic array index 1 does not exist, 0 items are in the dynamic array.
+
+Bây giờ có cách nào để ta dùng hàm new cho các chiều của mảng không. Câu trả lời là có nhé.
+Có 2 cách: Đầu tiên ta thay dòng bị báo lỗi lúc nảy bằng dòng:
+mang = '{2{'{2{0}}}};
+Lúc này ta xác định kích thước của mảng là 2x2 và giá trị ban đầu cho từng phần tử là 0.
+Kết quả chạy mô phỏng lúc này là hoàn toàn chính xác.
+Bây giờ ta thử cách thứ hai đó là thay dòng báo lỗi bằng các dòng lệnh:
+     mang = new[2];
+        foreach (mang[i]) begin
+        mang[i] = new[2];
+     end
+Với code bên trên ta đang tiến hành thực hiện khai báo size cho chiều thứ nhất. Tương ứng với mỗi chiều ta lại khai báo size cho từng phần tử trongcác chiều đó.
+Kết quả simulation vẫn đúng.
+Ngoài ra trong mảng linh hoạt ta cũng có hỗ trợ 1 tính năng mở rộng mảng và giữ lại các giá trị đã có. Giả sử ta có chương trình như bên dưới:
+ module test (output logic b);
+int mang [], mang_2 [];
+   initial begin
+     mang = new[2];
+     mang[1] = 1;
+     mang[0] = 0;
+     foreach (mang[i]) begin
+        $display("mang[%d] : %d",i,mang[i]);
+     end
+     $display("mang 2");
+     mang_2 = new[4](mang);
+     foreach (mang_2[j]) begin
+        $display("mang_2[%d] : %d",j,mang_2[j]);
+     end
+   end
+endmodule
+
+Khi chạy simulation, Ta có kết quả như bên dưới:
+mang[          0] :           0
+mang[          1] :           1
+mang 2
+mang_2[          0] :           0
+mang_2[          1] :           1
+mang_2[          2] :           0
+mang_2[          3] :           0
+ 
+Điều này chứng tỏ là mảng “mang_2” đã copy các phần tử từ mảng “mang” qua và thêm hai phần tử mới.
+Như vậy mảng có tính năng sao chép và thêm mới.
+Bây giờ ta thêm dòng lệnh màu đỏ để xem kết quả như thế nào nhé:
+module test (output logic b);
+int mang [], mang_2 [];
+
+   initial begin
+     mang = new[2];
+     mang[1] = 1;
+     mang[0] = 0;
+     foreach (mang[i]) begin
+        $display("mang[%d] : %d",i,mang[i]);
+     end
+     $display("mang 2");
+     mang_2 = new[4](mang);
+     mang_2 = new[4];
+     foreach (mang_2[j]) begin
+        $display("mang_2[%d] : %d",j,mang_2[j]);
+     end
+   end
+
+endmodule
+
+Với dòng lệnh này kết quả in ra sẽ là:
+mang[          0] :           0
+mang[          1] :           1
+mang 2
+mang_2[          0] :           0
+mang_2[          1] :           0
+mang_2[          2] :           0
+mang_2[          3] :           0 
+Điều này có nghĩa là khi ta thêm dòng lệnh new thì các giá trị cũ bị mất đi và ta đang khởi tạo mới cho mảng.
+
+3.	Kiểu Queues.
+
+Cấu trúc khai báo:
+<Kiểu dữ liệu> <Tên queue> [$];
+Trong đó kích thước của queue là không giới hạn và nó chỉ phụ thuộc vào giới hạn của bộ mô phỏng (Simulator). Tương tự như các mảng khác phần tử đầu tiên của queue mang chỉ số là 0 và nếu queue có n phần tử thì phần tử cuối cùng mang chỉ số là (n-1).
+Với kiểu dữ liệu queue ta có 7 method như bên dưới:
+Size(): Trả về số lượng phần tử trong một queue.
+Insert(): Chèn một phần tử tại một vị trí xác định.
+Delete(): Xoá một phần tử tại một vị trí nhất định.
+Pop_front(): Lấy phần tử đầu tiên của queue và gán vào một biến khác đồng thời xoá phần tử đầu tiên trong queue đó.
+Pop_back(): Lấy phần tử cuối cùng của queue và gán vào một biến khác đồng thời xoá phần tử cuối cùng trong queue đó.
+Push_front: Thêm một phần tử tại giá trị ban đầu của queue.
+Push_back:  Thêm một phần tử tại giá trị cuối của queue.
+
+Bây giờ ta tiến hành phân tích một số cách sử dụng queue nhé:
+bit [3:0]    data [$];
+
+Định nghĩa một queue tên data và mỗi phần tử trong queue sẽ có 4 bit.
+logic [7:0]  data [$:127];
+
+Định nghĩa một queue với tối đa là 128 phần tử, mỗi phần tử có 8 bit dữ liệu. Vậy nếu ta định nghĩa số phần tử trong mảng là 128 nhưng ta gán số vượt quá 128 giá trị cho queue thì kết quả sẽ như thế nào ? Ta xét ví dụ như bên dưới:
+
+module test ();
+logic [1:0] data [$:1];
+   initial begin
+      data = {2'b10, 2'b11, 2'b00};
+     foreach (data[i]) begin
+        $display("data[%d] : %b",i,data[i]);
+     end
+   end
+
+endmodule
+
+Lúc này kết qua in ra màn hình chỉ in 2 giá trị :
+data[          0] : 10
+data[          1] : 11
+Giá trị data[2] = 00 không được in ra do ta đã hạn chế số phần tử của queue là 2.
+Ta có một ví dụ khác. Ta muốn in phần tử thử 3 cụ thể của mảng ra màn hình:
+module test ();
+logic [1:0] data [$:1];
+   initial begin
+      data = {2'b10, 2'b11, 2'b00};
+        $display("data[2] : %b",data[2]);
+   end
+
+endmodule
+
+Kết quả in ra sẽ mang giá trị xx. Nghĩa là không tồn tại phần tử số 3 vượt quá số phần tử được giới hạn ban đầu là 2.
+Bây giờ ta muốn gán giá trị cho queue. Ta có câu lệnh như bên dưới:
+int  data [$] =  { 1, 2, 3, 4, 5 };
+
+Nếu ta định nghĩa một queue và không gán bất kì giá trị nào cho queue thì giá trị mặc định của queue là bao nhiêu. Ta xét ví dụ như bên dưới:
+
+
+module test ();
+logic [1:0] data [$];
+   initial begin
+        $display("data[2] : %b",data[2]);
+   end
+endmodule
+
+Giá trị in ra vẫn sẽ là xx. Nghĩa là khi ta không gán giá trị cho queue thì queue sẽ không chưa bất kì một giá trị nào (điều này khác với kiểu dữ liệu mảng bên trên).
+tmp = q1 [0];    // Gán giá trị phần tử đầu tiên của queue vào tmp
+tmp = q1 [$];    // Gán giá trị phần tử cuối cùng của queue vào tmp
+
+Phép gán 1 queue cho 1 queue khác:
+int  q1 [$] =  { 1, 2, 3, 4, 5 };  
+int  q2 [$];  
+q2 = q1;
+
+Với cách làm bên trên ta đang sao chép toàn bộ các phần tử từ queue q1 sang q2.
+
+q2[2] = 15;              // Thay thế phần tử số 2 của q2 bằng giá trị 15
+q2.insert (2, 15);       // Thêm phần tử 15 vào trước vĩ trí số 2 trong queue
+q2 = { q2, 22 };         // Gắn giá trị 22 vào cuối của q2
+q2 = { 99, q2 };         // Gắn thêm giá trị 99 vào vị trí đầu tiên của q2
+q2 = q2 [1:$];           // Xoá phần tử đầu tiên và ta chỉ giữ lại các phần tử từ vị trí 1 đến phần tử cuối
+q2 = q2 [0:$-1];         // xoá phần tử cuối và ta chỉ giữ lại phần tử từ vị trí 0 đến vị trí gần cuối
+q2 = q2 [1:$-1];         // Xoá phần tử đầu và cuối.
+
+
+Bây giờ ta có ví dụ như bên dưới:
+
+module test ();
+logic [1:0] data [$];
+   initial begin
+      data = {2'b10, 2'b11, 2'b00};
+      data = data[1:$];
+        $display("data[0] : %b",data[0]);
+   end
+
+endmodule
+Lúc đầu giá trị data[0] = 10. Sau khi ta dung lệnh để xoá phần tử đầu tiên thì giá trị 11 sẽ trở thành phần tử đầu tiên trong queue data.
+
+Ta xét chương trình tiếp theo:
+module test ();
+logic [1:0] data [$];
+   initial begin
+      data = {2'b10, 2'b11, 2'b00};
+      data = data[1:$];
+        $display("data[0] : %b",data[2]);
+   end
+
+endmodule
+
+Trường hợp này khi ta xoá phần tử đầu thì giá trị data[2] sẽ bằng xx.
+
+Bây giờ ta thử các trường hợp push và pop:
+module test ();
+int tmp;
+int data [$];
+   initial begin
+      data = {1, 2, 3};
+      foreach (data[i])      $display("data[%d] = %d", i, data[i]);
+      data.push_front(0);
+      foreach (data[i])      $display("data_push_front[%d] = %d", i, data[i]);
+      data.push_back(4);
+      foreach (data[i])      $display("data_push_back[%d] = %d", i, data[i]);
+      tmp = data.pop_front;
+      $display("tmp_pop_front = %d", tmp);
+      tmp = data.pop_back;
+      $display("tmp_pop_back = %d", tmp);
+   end
+
+endmodule
+
+
+Ta có kết quả như bên dưới:
+
+
+
+data[          0] =           1
+data[          1] =           2
+data[          2] =           3
+data_push_front[          0] =           0
+data_push_front[          1] =           1
+data_push_front[          2] =           2
+data_push_front[          3] =           3
+data_push_back[          0] =           0
+data_push_back[          1] =           1
+data_push_back[          2] =           2
+data_push_back[          3] =           3
+data_push_back[          4] =           4
+tmp_pop_front =           0
+tmp_pop_back =           4
+
+https://www.chipverify.com/systemverilog/systemverilog-enumeration
+
+
+
+
+
+
+
+
+
+
