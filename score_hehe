@@ -1,0 +1,114 @@
+Scoreboard
+Scoreboard là một khối quan trọng trong môi trường tự kiểm tra. Môi trường tự kiểm tra là môi trường có khả năng dự đoán kết quả ngõ ra của DUT dựa vào ngõ vào (Là các giá trị được tạo trong khối sequencer), Sau đó từ những kết quả đó khối scoreboard sẽ tiến hành so sánh giữa kết quả dự đoán và kết quả ngõ ra của DUT. Nếu chúng là bằng nhau, Thì sẽ in ra log file kết quả PASS hoặc ngược lại là FAIL. Scoreboard có nhiệm vụ kiểm tra tính đúng đắn của function. Khối này được đánh giá là khó nhất trong quá trình thiết kế vì hầu như người dùng rất khó để  re-use. Các dự án khác nhau hoặc các module có chức năng khác nhau sẽ yêu cầu các khối scoreboard khác nhau.
+Trong trường hợp này, Tôi đã quyết định tiến hành tính toán kết quả dự đoán trong khối monitor.  Và truyền kết quả của DUT và kết quả dự đoán đến scoreboard.  Ưu điểm của cách làm này là ta có thể re-use khối scoreboard. Hầu hết các nhà thiết kế trong lĩnh vực vi mạch thích tính toán kết quả dự đoán trong khối scoreboard. Vì vậy, Việc thực hiện tính toán này là phụ thuộc vào các nhà thiết kế.
+Trong agent, tôi có 2 monitor, do đó, tôi sẽ phải giao tiếp hai đường dữ liệu. Sau đó, Tôi tiến hành so sánh kết quả từ hai đường dữ liệu đó. Nếu chúng khớp nhau, điều đó có nghĩa là cả testbench và DUT đều khớp về function và nó sẽ trả về một thông báo "OK".
+Tuy nhiên chúng ta có môt vấn đề ở đây: Chúng ta nhận hai đường dữ liệu từ hai luồng giao dich, chúng ta cần đảm bảo chúng được đồng bộ hóa. Nghĩa là không phải lúc nào dữ liệu ouput từ scoreboard và dữ liệu dự đoán (được tính toán trong monitor) đến cùng một lúc tại thời điểm so sánh. Chúng ta cần đảm bảo rằng tại thời điểm so sánh các giá trị là tương đương nhau. Điều này có thể được thực hiện thủ công bằng cách viết các hàm write () thích hợp nhưng có một cách dễ dàng và gọn gàng hơn để thực hiện việc này: bằng cách sử dụng UVM FIFO. Thư viện UVM FIFO được trình bày trong một bài khác. Các bạn có thể tìm hiểu thêm.
+Bây giờ chúng ta cùng nhau tìm hiểu cấu trúc cơ bản của một scoreboard nhé:
+
+class add4bit_scoreboard extends uvm_scoreboard;
+
+    `uvm_component_utils(add4bit_scoreboard)
+    uvm_analysis_export #(add4bit_trans) monitor_before;
+    uvm_analysis_export #(add4bit_trans) monitor_after;
+    add4bit_trans trans_before;
+    add4bit_trans trans_after;
+    uvm_tlm_analysis_fifo#(add4bit_trans) fifo_before;
+    uvm_tlm_analysis_fifo#(add4bit_trans) fifo_after;
+
+    function new (string name = "", uvm_component parent);
+….
+    endfunction: new
+
+    function void build_phase(uvm_phase phase);
+….
+    endfunction: build_phase
+
+
+    function void connect_phase(uvm_phase phase);
+      	  …
+    endfunction: connect_phase
+
+
+    task run();
+.…
+    endtask: run
+
+
+    virtual function void compare();
+….
+    endfunction: compare
+
+endclass: add4bit_scoreboard
+
+Tôi sẽ giải thích ngắn gọn các method trong cấu trúc bên trên. 
+    uvm_analysis_export #(add4bit_trans) monitor_before;
+    uvm_analysis_export #(add4bit_trans) monitor_after;
+2 chuẩn giao tiếp này là để connect giữa khối bên ngoài nhận vào và  cổng gieo tiếp fifo. Dùng để chuyển dữ liệu output từ DUT và dữ liệu dự đoán được tính toán trong khối monitor đến đầu vào của fifo.
+    uvm_tlm_analysis_fifo#(add4bit_trans) fifo_before;
+    uvm_tlm_analysis_fifo#(add4bit_trans) fifo_after;
+Đây là kiểu dữ liệu fifo.
+Function build_phase được dùng để khởi tạo các giá trị ban đầu cho các biến.
+Function connect_phase được dùng để connect dữ liệu bên ngoài vào fifo.
+Task run Lấy dữ liệu ra khỏi fifo và tiến hành so sánh kết quả.
+
+
+Dưới đây là chương trình hoàn chỉnh của khối scoreboard cho bộ cộng 4 bit:
+
+//Author: SCD/BUS/TrongTran
+//Date  : 03/29/2019
+
+`ifndef _UVM_SCOREBOARD_
+`define _UVM_SCOREBOARD_
+
+class add4bit_scoreboard extends uvm_scoreboard;
+
+    `uvm_component_utils(add4bit_scoreboard)
+    uvm_analysis_export #(add4bit_trans) monitor_before;
+    uvm_analysis_export #(add4bit_trans) monitor_after;
+    add4bit_trans trans_before;
+    add4bit_trans trans_after;
+    uvm_tlm_analysis_fifo#(add4bit_trans) fifo_before;
+    uvm_tlm_analysis_fifo#(add4bit_trans) fifo_after;
+
+    function new (string name = "", uvm_component parent);
+        super.new(name, parent);
+        trans_before = new("trans_before");
+        trans_after = new("trans_after");
+    endfunction: new
+
+    function void build_phase(uvm_phase phase);
+        super.build_phase(phase);
+        fifo_before = new(.name("fifo_before"), .parent(this));
+        fifo_after = new(.name("fifo_after"), .parent(this));
+        monitor_before = new(.name("monitor_before"), .parent(this));
+        monitor_after = new(.name("monitor_after"), .parent(this));
+    endfunction: build_phase
+
+
+    function void connect_phase(uvm_phase phase);
+        monitor_before.connect(fifo_before.analysis_export);
+        monitor_after.connect(fifo_after.analysis_export);
+    endfunction: connect_phase
+
+
+    task run();
+        forever begin
+            fifo_before.get(trans_before);
+            fifo_after.get(trans_after);
+            compare();
+        end
+    endtask: run
+
+
+    virtual function void compare();
+        if (trans_before.sum == trans_after.sum) begin
+            `uvm_info("COMPARE_SUM", "PASS", UVM_ALL_ON)
+        end else begin
+            `uvm_info("COMPARE_SUM", "FAIL", UVM_ALL_ON)
+        end
+    endfunction: compare
+
+endclass: add4bit_scoreboard
+
+`endif
+
