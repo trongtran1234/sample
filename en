@@ -1,0 +1,31 @@
+Về khối env, tôi thấy nó cũng khá giống với khối agent. Chức năng chính của khối này là tiến hành connect hai khối scoreboard và khối agent lại với nhau thông qua chuẩn giao tiếp TLM. Tuy nhiên, vì chúng ta có hai luồng dữ liệu khác nhau nên ta phải khai báo 2 biến TLM. Dùng để truyền output của DUT và truyền kết quả dự đoán từ khối agent đến khối scoreboard.
+
+Dưới đây là cấu trúc cơ bản của khối env:
+`ifndef _UVM_ENV_
+`define _UVM_ENV_
+
+class add4bit_env extends uvm_env;
+    `uvm_component_utils(add4bit_env)
+
+    add4bit_scoreboard score_trans;
+    add4bit_agent agent_trans;
+
+    function new(string name = "", uvm_component parent);
+        super.new(name, parent);
+    endfunction: new
+
+    function void build_phase(uvm_phase phase);
+        super.build_phase(phase);
+        score_trans = add4bit_scoreboard::type_id::create(.name("score_trans"), .parent(this));
+        agent_trans = add4bit_agent::type_id::create(.name("agent_trans"), .parent(this));
+    endfunction: build_phase
+
+    function void connect_phase(uvm_phase phase);
+        super.connect_phase(phase);
+        agent_trans.agent_before.connect(score_trans.monitor_before);
+        agent_trans.agent_after.connect(score_trans.monitor_after);
+    endfunction: connect_phase
+
+endclass: add4bit_env
+
+`endif
