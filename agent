@@ -1,0 +1,87 @@
+Agent
+Như trong hình trên agent sẽ chứa 3 thành phần bên trong bao gồm: sequencer, driver và monitor. Các phần tử này được xây dựng độc lập với nhau. Nghĩa là không có bất mối liên hệ hay liên kết giữa chúng.
+Agent sẽ đảm nhận vai trò kết nối các phần tử đó lại với nhau. 
+Một agent không yêu cầu run phase, Nghĩa là không có code mô phỏng nào được thực thi trong khối này Tuy nhiên ta sẽ có một connect phase, và một build phase.
+Tôi trình bài ngắn gọn như sau: Chúng ta tạo sequencer, monitor, driver trong build phase.
+Ta sẽ tiến hành kết nối các thành phần này với nhau thông qua trình giao tiếp TLM, seq_item_export và seq_item_port.
+Dưới đây tôi trình bày một cấu trúc cơ bản của class agent:
+
+class add4bit_agent extends uvm_agent;
+    `uvm_component_utils(add4bit_agent)
+
+    //Định nghĩa TLM liên kết giữa phần tử agent và 2 bộ monitor
+    uvm_analysis_port#(add4bit_trans) agent_before;
+    uvm_analysis_port#(add4bit_trans) agent_after;
+   // Định nghĩa 2 biến monitor để tiến hành connect với agent
+    add4bit_monitor_before monitor_before;
+    add4bit_monitor_after monitor_after;
+   //Ta sẽ liên kết 2 bộ dirver và sequencer với nhau thông qua agent bằng giao thức TLM.
+    add4bit_driver driver_trans;
+    add4bit_sequencer sequence_trans;
+
+  //Khai báo constructor cho class add4bit_agent
+    function new(string name = "", uvm_component parent);
+    	….
+    endfunction: new
+
+ //Tiến hành bước build giá trị và khai báo giá trị khởi tạo cho các class được declare ở trên.
+    function void build_phase(uvm_phase phase);
+….
+    endfunction: build_phase
+
+//Tiến hành connect các phần từ được định nghĩa ở trên. Driver<=>Sequencer, monitor_before <=> agent, mon_before<=> agent.
+    function void connect_phase(uvm_phase phase);
+….
+    endfunction: connect_phase
+endclass: add4bit_agent
+
+Bây giờ ta cần làm rõ vai trò của 2 biến TLM (uvm_analysis_port). Như đã trình bài trong phần monitor. Ta có 2 bộ monitor (monitor_after, monitor_before), Hai bộ monitor này sẽ giao tiếp với scoreboard. Thế nhưng ta không thể connect trực tiếp giữa monitor và scoreboard vì chúng không nằm trong cùng 1 vùng. Agent như là wrapper của monitor. Ta dùng 2 giao thức TLM để connect giữa 2 monitor và agent. Sau đó agent sẽ được  connect đến scoreboard (Trong khối env ta sẽ tìm hiểu sau).
+        monitor_before.mon_before.connect(agent_before);
+        monitor_after.mon_after.connect(agent_after);
+Sử dụng key word “connect” để connect các phần tử với nhau. Ở đây nhiều bạn sẽ tự hỏi tại sao chúng ta không sử dụng “uvm_blocking_put_port” và “uvm_blocking_put_imp” thay vì “uvm_analysis_port”. Cầu trả lời là nếu bạn muốn connect 1 khối với 2 khối khác nhau thì “uvm_analysis_port” sẽ giúp bạn nhận ra các khối liên kết.
+Ta connect khối driver và khối sequencer như bên dưới:
+       driver_trans.seq_item_port.connect(sequence_trans.seq_item_export);
+Trong trường hợp này khối sequencer sẽ đóng vai trò như là bên gửi và khối driver sẽ đóng vai trò như là bên nhận. 
+Ta có chương trình hoàn chỉnh như bên dưới:
+
+`ifndef _UVM_AGENT_
+`define _UVM_AGENT_
+
+class add4bit_agent extends uvm_agent;
+    `uvm_component_utils(add4bit_agent)
+
+    //Định nghĩa TLM liên kết giữa phần tử agent và 2 bộ monitor
+    uvm_analysis_port#(add4bit_trans) agent_before;
+    uvm_analysis_port#(add4bit_trans) agent_after;
+    // Định nghĩa 2 biến monitor để tiến hành connect với agent
+    add4bit_monitor_before monitor_before;
+    add4bit_monitor_after monitor_after;
+    //Ta sẽ liên kết 2 bộ dirver và sequencer với nhau thông qua agent bằng giao thức TLM.
+    add4bit_driver driver_trans;
+    add4bit_sequencer sequence_trans;
+    //Tạo giá trị đầu cho các biến trong class add4bit_agent
+    function new(string name = "", uvm_component parent);
+    	    super.new(name, parent);
+    endfunction: new
+
+    //Tiến hành bước build giá trị và khai báo giá trị khởi tạo cho các class được declare ở trên.
+    function void build_phase(uvm_phase phase);
+        super.build_phase(phase);
+        agent_before = new(.name("agent_before"), .parent(this));
+        agent_after = new(.name("agent_after"), .parent(this));
+        monitor_before = add4bit_monitor_before::type_id::create(.name("monitor_before"), .parent(this));
+        monitor_after = add4bit_monitor_after::type_id::create(.name("monitor_after"), .parent(this));
+        driver_trans = add4bit_driver::type_id::create(.name("driver_trans"), .parent(this));
+        sequence_trans = add4bit_sequencer::type_id::create(.name("sequence_trans"), .parent(this));
+    endfunction: build_phase
+
+ //Tiến hành connect các phần từ được định nghĩa ở trên. Driver<=>Sequencer, monitor_before <=> agent, mon_before<=> agent.
+    function void connect_phase(uvm_phase phase);
+        super.connect_phase(phase);
+        driver_trans.seq_item_port.connect(sequence_trans.seq_item_export);
+        monitor_before.mon_before.connect(agent_before);
+        monitor_after.mon_after.connect(agent_after);
+    endfunction: connect_phase
+endclass: add4bit_agent
+
+`endif
