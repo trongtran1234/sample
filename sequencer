@@ -1,0 +1,71 @@
+Sequence
+Sau khi hoàn thành việc code cho một transaction lúc này ta đã xác định được các phần tử giao tiếp giữa các thành phần. Tiếp theo chúng ta sẽ cần tạo một bộ các giá trị của các biến input để gửi đến bộ driver. Đây là công việc của sequence. Sequence là một tập hợp các giao dịch được sắp xếp theo thứ tự, Các giá trị được tạo ra là các giá trị ngẫu nhiên từ các biến random (Được khai báo trong phần transaction). Số lượng các phần tử ngẫu nhiên do người lập trình quy định. 
+Sequence được mở rộng từ uvm_ sequence và nhiệm vụ chính của nó là tạo ra các giao dịch. Sau khi tạo các giao dịch đó, có một lớp khác đưa các dữ liệu đó đến driver đó là sequencer.
+Để sequence biết được các biến cần được tạo giá trị ta cần truyền tham số class transaction vào class sequence.
+Tóm lại ta có kết luận ngắn gọn như sau: transaction khai báo các biến (có thể xem như một model) và các ràng buộc (input), Còn sequence dựa vào đó để tạo ra các giá trị ngẫu nhiên. 
+Dưới đây là cú pháp khai báo cho một class sequence:
+
+class add4bit_sequence extends uvm_sequence #(add4bit_trans);
+‘uvm_object_untils(add4bit_sequence)
+
+function new (string name = “”);
+….
+endfunction
+
+task body ();
+….
+endtask
+endclass
+
+Ta đã truyền tham số của class transaction vào class sequence như khai báo bên trên.
+Bây giờ ta bắt đầu tìm hiểu về cấu trúc của một bộ sequence:
+Thành phần chính của sequence là một method tên là “task body ()”
+Trong method này ta phải thực hiện các bước cơ bản như xác định số phần tử giao tiếp ( Câu lệnh foreach) và tiến hành thực hiện tạo ngẫu nhiên các giá trị.
+
+task body();
+ add4bit_trans add_trans;     
+repeat (100) begin
+add_trans = add4bit_trans::type_id::create(.name("add_trans"), .contxt(get_full_name()));
+start_item(add_trans);
+ assert (add_trans.randomize ());
+ `uvm_info("RANDOM_INPUT", $sformatf("in_1: %d, in_2: %d", add_trans.in_1, add_trans.in_2), UVM_LOW)
+finish_item(add_trans);
+end
+endtask: body 
+
+Dòng 2: Ta khai báo 1 biến kiểu transaction đã được định nghĩa ở phần trước.
+Dòng 3: Ở chương trình hiện tại, Ta thực hiện tạo 100 giá trị ngẫu nhiên.
+Dòng 4: Khởi tạo 1 transaction trống.
+Dòng 6: Tiến hành tạo giá trị ngẫu nhiên với hàm randomize.
+Dòng 7: In các giá trị vừa tạo ra màn hình để quan sát.
+
+Dưới đây là một chương trình hoàn chỉnh của một sequence cho bộ cộng 4 bit:
+
+`ifndef _UVM_SEQ_
+`define _UVM_SEQ_
+
+class add4bit_sequence extends uvm_sequence #(add4bit_trans);
+  `uvm_object_utils(add4bit_sequence)
+
+  function new (string name = "");
+   	 super.new(name);
+  endfunction: new
+
+  task body();
+    add4bit_trans add_trans;
+    repeat (100) begin
+    add_trans = add4bit_trans::type_id::create(.name("add_trans"), .contxt(get_full_name()));
+    start_item(add_trans);
+      assert (add_trans.randomize ());
+      `uvm_info("RANDOM_INPUT", $sformatf("in_1: %d, in_2: %d", add_trans.in_1, add_trans.in_2), UVM_LOW)
+    finish_item(add_trans);
+    end
+  endtask: body
+
+endclass: add4bit_sequence
+`endif
+
+
+
+
+ 
