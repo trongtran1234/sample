@@ -1,0 +1,20 @@
+Tìm hiểu về việc thay thế FF (Flip flop) trong quá trình hậu synthesis.
+Synthesis là một bước khá quan trọng và cần rất nhiều nỗ lực để kiểm tra, test (timing, power…). Trong bài này tôi sẽ trình bày cho các bạn về việc thay thế các FF trên gate nestlist (Sau khi synthesis).
+
+Meta FF.
+Đây là một công việc của Backend team. Nhiệm vụ của họ là thay thế các FF đã được liệt kê trong một danh sách được cung cấp bởi designer hoặc người synthesis (Frontend team) trên gate nestlist bởi 1 FF thuộc loại khác.
+Với phương pháp này ta thấy thông thường nhất là việc thay các FF trong mạch asyn 2 FF.
+Ta có cấu trúc như hình bên dưới:
+
+Như vậy ta có cấu trúc FF1 -> FF2. Nhiệm vụ của designer hay nói đúng hơn là người thực hiện quá trình tổng hợp (synthesis) sẽ liệt kê ra tên của FF1 trong mạch async. Có nhiều cách để liệt kê, ở đây tôi đề cập đến 2 cách: 
+Cách 1: Là cách phổ biến nhất, đó là dựa vào report của quá trình STAcheck. Đối với mạch async, STAcheck sẽ báo ra các lỗi để người dùng confirm. Đồng thời tên của FF1 cũng sẽ được liệt kê ra trong report. Nhiệm vụ của người synthesis chỉ là thu thập chúng, tạo file và gửi cho Backend team.
+Cách 2: Dành cho những người hiểu rõ về thiết kế của mạch. Người thu thập thông tin cần biết được các port input nào hoạt động với clock async (Nghĩa là clock khác với clock của module). Từ các port đó ta cần lần theo các connection trong gate nestlist để xác định được cập FF nào có chức năng đồng bộ tín hiệu async. Với cách làm này, chỉ có thể áp dụng cho module có rất ít port async và module nhỏ. Với một module lớn và có nhiều port async bạn sẽ phải tốn thời gian để liệt kê đầy đủ thông tin.
+Vậy mục đích của việc thay thế này là gì. Đó là các FF1 sẽ được thay thế bởi các FF có tuổi thọ lâu hơn, tốt hơn. Hãy tưởng tượng khi FF1 bị die thì mạch chúng ta sẽ làm việc không đúng nữa. Làm việc với mạch async mang lại rất nhiều rủi ro nếu ta không kiểm tra đầy đủ.
+TMR.
+Việc thay thế số 2 tôi nói đến trong bài này là TMR (Triple modular redundancy): Đây cũng là việc thay thế của Backend team và Fronend team cũng là những người cần cung cấp các list cần thay thế.
+Việc thông thường là ta sẽ thay thế các FF.
+Tôi lấy ví dụ. Khi bạn có một tín hiệu để xuất kết quả error ra đến module interrupt. Giả sử trên đường truyền tín hiệu error này, vì một lí do nào đó tín hiệu của bạn bị sai (tín hiệu error thường 1 bit vì vậy xác xuất sai của bạn khá cao) khi đó hệ thống của bạn dù không lỗi cũng có thể bị interrupt (tín hiệu error truyền sai từ giá trị 0 -> 1). Hoặc dù có lỗi nhưng vẩn không bị interrupt (Tín hiệu error truyền sai từ giá trị 1 ->0). Điều này thật sự nghiêm trọng nhất là đối với việc các module connect với nhau. TMR sẽ giúp chúng ta giải quyết vấn đề này bằng cách nhân 3 mạch hay FF lên  (Hay nói đúng hơn là thay thế mạch FF hiện tại bằng 3 mạch tương tự mắc song song với nhau, 3 mạch này có output đi vào bộ compare) sau đó so sánh kết quả của 3 mạch hay FF này nếu có tối thiểu 2 tín hiệu trong 3 tín hiệu này mang giá tri 0 thì giá trị ra mang giá trị 0 và ngược lại.
+Hình bên dưới biểu thị rõ nét mạch nhân 3 để check tín hiệu ra.
+
+ 
+
