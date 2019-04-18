@@ -1,0 +1,21 @@
+Đối với các transaction đơn giản có thể được extends từ uvm_transaction, nhưng các giao dịch kích hoạt theo chuỗi phải được extends từ uvm_sequence_item. Đây là phần mở rộng của uvm_object.
+Để tạo tín hiệu kích thích cho sequence ta có 2 cách:
+Sử dụng cấu trúc
+start_item();
+random….
+finish_item();
+Dữ liệu sẽ được tạo random trong cấu trúc này đồng thời được gửi đến khối driver. Chúng ta sẽ được tìm hiểu cơ chế nhận dữ liệu từ sequencer của khối driver thông qua cặp cấu trúc seq_item_port.get_next_item()/seq_item_port.item_done trong bài sau. 
+Sứ dụng `uvm_do_* macros. Việc sứ dụng macro này nhầm giúp giảm công sức cho việc code mà vẫn đạt được mục tiêu mong muốn.
+Ngoài cấu trúc task body chúng ta còn có 2 task phụ khác :
+
+virtual task pre_body ();
+      if (starting_phase != null)
+         starting_phase.raise_objection (this);
+endtask
+ 
+ Task này được định nghĩa trước task body. Mục đích chính đó là kiểm tra trạng thái của cờ objective. Cờ này là nhầm 
+ 
+virtual task post_body ();
+      if (starting_phase != null) 
+         starting_phase.drop_objection (this);
+endtask
