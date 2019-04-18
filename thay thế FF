@@ -15,6 +15,8 @@ Việc thay thế số 2 tôi nói đến trong bài này là TMR (Triple modula
 Việc thông thường là ta sẽ thay thế các FF.
 Tôi lấy ví dụ. Khi bạn có một tín hiệu để xuất kết quả error ra đến module interrupt. Giả sử trên đường truyền tín hiệu error này, vì một lí do nào đó tín hiệu của bạn bị sai (tín hiệu error thường 1 bit vì vậy xác xuất sai của bạn khá cao) khi đó hệ thống của bạn dù không lỗi cũng có thể bị interrupt (tín hiệu error truyền sai từ giá trị 0 -> 1). Hoặc dù có lỗi nhưng vẩn không bị interrupt (Tín hiệu error truyền sai từ giá trị 1 ->0). Điều này thật sự nghiêm trọng nhất là đối với việc các module connect với nhau. TMR sẽ giúp chúng ta giải quyết vấn đề này bằng cách nhân 3 mạch hay FF lên  (Hay nói đúng hơn là thay thế mạch FF hiện tại bằng 3 mạch tương tự mắc song song với nhau, 3 mạch này có output đi vào bộ compare) sau đó so sánh kết quả của 3 mạch hay FF này nếu có tối thiểu 2 tín hiệu trong 3 tín hiệu này mang giá tri 0 thì giá trị ra mang giá trị 0 và ngược lại.
 Hình bên dưới biểu thị rõ nét mạch nhân 3 để check tín hiệu ra.
+Tương tự ta có thể nhân 5 mạch để xác xuất lỗi giảm xuống. Nếu 2 tín hiệu bị lỗi và 3 tín hiệu chính xác thì tín hiệu ngõ ra sẽ mang giá trị 3 tín hiệu đó.
+Tuy nhiên lựa chọn nhân 3 mạch là lựa chọn khả dĩ nhất vì nếu bạn tăng nhiều mạch gate size của bạn sẽ tăng lên đáng kể mà xác xuất chính xác cũng không hiệu quả hơn là bao so với nhân 3 mạch.
 
  
 
