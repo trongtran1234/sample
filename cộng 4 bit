@@ -1,0 +1,89 @@
+//Author: TrongTran
+//Date  : 01/03/2019
+module add_4bit (clk, rst_n, in_1, in_2, sum, c_out);
+// Define bit width for inputs
+parameter WIDTH = 3;
+
+// Define input/output
+input clk;
+input rst_n;
+input [WIDTH:0] in_1;
+input [WIDTH:0] in_2;
+output [WIDTH:0] sum;
+output c_out;
+wire [WIDTH-1:0] c_tmp;
+wire [WIDTH:0] sum_tmp;
+wire c_re;
+reg [WIDTH:0] sum;
+reg c_out;
+
+// Add 2 bit in position [0]
+full_adder full_adder_00 (.in_1(in_1[0]), .in_2(in_2[0]),
+.c_in(1'b0), .out(sum_tmp[0]), .c_out(c_tmp[0]));
+
+// Add bits in  position [2:1]
+generate
+  genvar index;
+  for (index = 1; index < WIDTH; index = index + 1) begin: re_peat
+    full_adder full_adder_01 (.in_1(in_1[index]), .in_2(in_2[index]),
+    .c_in(c_tmp[index - 1]), .out(sum_tmp[index]), .c_out(c_tmp[index]));
+  end
+endgenerate
+
+// Add bit in position [3]
+full_adder full_adder_02 (.in_1(in_1[WIDTH]), .in_2(in_2[WIDTH]),
+.c_in(c_tmp[WIDTH - 1]), .out(sum_tmp[WIDTH]), .c_out(c_re));
+
+
+// Add FF for the result
+always @(posedge clk or negedge rst_n) begin
+if (!rst_n) begin
+c_out <= 1'b0;
+sum <= 4'b0;
+end else begin
+c_out <= c_re;
+sum <= sum_tmp;
+end
+end
+
+endmodule
+
+
+module full_adder (in_1, in_2, c_in, out, c_out);
+
+// Define input/output
+input in_1;
+input in_2;
+input c_in;
+output out;
+output c_out;
+
+wire sum_tmp, c_tmp_0, c_tmp_1;
+
+// Add 2 inputs
+half_adder half_adder_00 (.in_1(in_1), .in_2(in_2),
+                         .out(sum_tmp), .c_out(c_tmp_0));
+
+// Add sum of 2 input with carry 1
+half_adder half_adder_01 (.in_1(sum_tmp), .in_2(c_in),
+                         .out(out), .c_out(c_tmp_1));
+
+// Calculate carry out
+assign c_out = c_tmp_1 | c_tmp_0;
+
+endmodule
+
+
+module half_adder (in_1, in_2, out, c_out);
+// defien input/output
+input in_1;
+input in_2;
+output out;
+output c_out;
+
+// Calculate sum of 2 inputs
+assign out = in_1^in_2;
+// Calculate carry out
+assign c_out = in_1&in_2;
+
+endmodule
