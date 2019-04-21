@@ -1,0 +1,91 @@
+Tạo monitor
+Khối monitor là một mô hình khép kín, quan sát sự giao tiếp của DUT với testbench. Nhiệm vụ chính của khối Monitor là quan sát các output/input của DUT. Nếu có bất kì trường hợp nào vi phạm các quy tắc của giao thức giao tiếp (Ví dụ chuẩn APB, AXI protocal), Thì khối monitor phải trả về tín hiệu error.
+Monitor là một thành phần thụ động, nó không điều khiển bất kỳ tín hiệu nào vào DUT, mục đích của nó là nhận các tín hiệu output từ DUT, Tín hiệu input đến DUT và gửi các dữ liệu đó đến bộ scoreboard để tiến hành so sánh và đánh giá. Một môi trường verify với UVM không chỉ giới hạn 1 monitor mà có thể có nhiều monitor, mỗi khối monitor sẽ thực hiện các chức năng riêng biệt.  Tôi lấy ví dụ, Bạn phải thiết kế 2 bộ monitor. Một cho việc nhận tín hiệu output từ DUT và gửi đến scoreboard. Bộ monitor thứ hai nhằm mục đích nhận tín hiệu input của DUT và thực hiện tín toán dữ liệu ra mong muốn(Việc tính toàn có thể được thực hiện trong khối scoreboard hoặc khối monitor, tuỳ vào người build môi trường quyết định) và gửi đến bộ scoreboard. Đồng thời, Bộ monitor thứ hai cũng giúp cho việc lấy coverage từ các input DUT.
+
+Tôi tóm lại các dữ liệu khối monitor nên nhận:
+Các đầu ra của DUT cho việc tuân thủ giao thức. 
+Các đầu vào của DUT để tính toán coverage.
+
+Dưới đây là 3 nhiệm vụ chính mà khối monitor thực hiện:
+
+Một khối monitor chịu trách nhiệm thu nhận các bus hoặc các các hiệu từ interface.
+Tiến hành kiểm tra các dữ liệu gửi đến có tuân thủ các quy tắc của protocal hay chưa. Đồng thời tiến hành tính coverage.
+Tiến hành gửi các dữ liệu nhận được đến analysis port nhằm gửi đến khối scoreboard.
+
+
+Dưới đây là cấu trúc cơ bản cho bộ monitor nhận output từ DUT:
+
+class add4bit_monitor_before extends uvm_monitor;
+    `uvm_component_utils(add4bit_monitor_before)
+    uvm_analysis_port#(add4bit_trans) mon_before;
+    virtual add4bit_if vif;
+
+    function new (string name, uvm_component parent);
+        super.new(name, parent);
+    endfunction: new
+
+    function void build_phase(uvm_phase phase);
+        super.build_phase(phase);
+        void'(uvm_resource_db#(virtual add4bit_if)::read_by_name(.scope("ifs"), .name("add4bit_if"), .val(vif)));
+        mon_before = new(.name("mon_before"), .parent(this));
+    endfunction: build_phase
+
+    task run_phase(uvm_phase phase);
+        add4bit_trans trans_mo1;
+        trans_mo1 = add4bit_trans::type_id::create(.name("trans_mo1"), .contxt(get_full_name()));
+        forever begin
+……..
+check_protocol ();
+………….
+        end
+    endtask: run_phase
+virtual function void check_protocol ();
+      ….
+   endfunction
+
+
+endclass: add4bit_monitor_before
+
+Còn đây là cấu trúc cơ bản cho bộ monitor nhận dữ liệu input của DUT:
+
+class add4bit_monitor_after extends uvm_monitor;
+    `uvm_component_utils(add4bit_monitor_after)
+    virtual add4bit_if vif;
+    uvm_analysis_port#(add4bit_trans) mon_after;
+    add4bit_trans trans_cv;
+    add4bit_trans trans_mo2;
+
+
+    covergroup add4bit_cov;
+………..
+    endgroup: add4bit_cov
+
+
+    function new(string name, uvm_component parent);
+        super.new(name, parent);
+        add4bit_cov = new;
+    endfunction: new
+
+    function void build_phase(uvm_phase phase);
+        super.build_phase(phase);
+        void'(uvm_resource_db#(virtual add4bit_if)::read_by_name(.scope("ifs"), .name("add4bit_if"), .val(vif)));
+        mon_after = new(.name("mon_after"), .parent(this));
+    endfunction: build_phase
+
+    task run_phase(uvm_phase phase);
+        trans_mo2 = add4bit_trans::type_id::create(.name("trans_mo2"), .contxt(get_full_name()));
+        forever begin
+……
+check_protocol ();
+
+    ………………
+        end
+    endtask: run_phase
+
+virtual function void check_protocol ();
+………..
+   endfunction
+
+endclass: add4bit_monitor_after
+
+
