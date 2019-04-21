@@ -1,0 +1,33 @@
+Tạo driver
+Driver là một khối có vai trò tương tác với DUT. Driver nhận data từ khối sequencer và thực hiện gửi chúng đến inteface nhằm tương tác với DUT.  Sự tương tác này sẽ được quan sát và đánh giá bởi một khối khác đó là monitor. Lưu ý là, không phải tất cả các tín hiệu input của  DUT đều được gửi. Driver chỉ nhận những tín hiệu cần thiết từ sequencer.
+Dưới đây là các bước mà driver sẽ thực hiện:
+Lấy dự liệu từ khối sequencer với lệnh “seq_item_port.get_next_item()”, Đến bước này tôi chắc rằng bạn đã nhớ đến việc tạo các tín hiệu random trong khối sequence bằng cặp lệnh:
+Start_item();
+…
+Finish_item();
+Đây chính là giao thức để connect giữa driver và sequencer.
+Tín hiệu random từ khối sequncer không thể được gửi một cách tuỳ ý vào DUT và phải theo một chuẩn hay quy tắc nào đó. Nhiệm vụ của chúng ta là lái những tín hiệu đến DUT sao cho phù hợp với specification của DUT.
+Và cuối cùng là ta đợi cho đến khi dữ liệu được chuyển đến DUT hoàn thành:
+seq_item_port.item_done();
+Dưới đây là một cấu trúc cơ bản của một driver:
+class add4bit_driver extends uvm_driver #(add4bit_trans);
+    `uvm_component_utils(add4bit_driver)
+    virtual add4bit_if vif;
+    function new (string name = "", uvm_component parent);
+        super.new(name, parent);
+    endfunction: new
+    function void build_phase(uvm_phase phase);
+        super.build_phase(phase);
+        void'(uvm_resource_db#(virtual add4bit_if)::read_by_name(.scope("ifs"), .name("add4bit_if"), .val(vif)));
+    endfunction: build_phase
+
+    task run_phase(uvm_phase phase);
+        drive ();
+    endtask: run_phase
+    virtual task drive();
+…
+    endtask: drive
+endclass: add4bit_driver
+
+
+
