@@ -1,0 +1,145 @@
+Mảng packed và mảng unpacked.
+Trong bài này chúng ta sẽ cùng tìm hiểu về mảng packed và mảng unpacked.
+Đây là 2 kiểu mảng được sử sụng khá phổ biến nhưng chúng ta có thể chưa nhận ra nó. Tôi lấy ví dụ khi bạn định nghĩa kiểu dữ liệu như bên dưới:
+bit [3:0] var;
+logic var [3:0];
+Bạn đang sử dụng mảng packed và unpacked rồi đấy.
+Vậy tại sao ta gọi đó là 1 mảng mà không gọi là 1 biến.
+Đầu tiên bạn có thể xem “logic” hay “bit” là các kiểu dữ liệu 1 bit và như vậy với biến var ta đang có 4 phần tử 1 bit kết hợp lại. Điều này có thể xem xét như là mảng 1 chiều có 4 phần tử, mỗi phần tử 1 bit.
+Bây giờ trước khi đi vào phân tích hai loại mảng trên, Tôi sẽ chỉ ra điểm khác biệt giữa chúng.
+Mảng packed: Kích thước mảng được khai báo trước tên biến. Packed array có thể được xem xét như một vector.
+Ví dụ:
+Bit [7:0] led;
+Bit [3:0] sw;
+Mảng unpacked: Kích thước mảng được khai báo sau tên biến
+Ví dụ:
+Bit led [7:0];
+Logic sw [3:0];
+
+Mảng packed
+Để xác định kích thước của mảng ta dùng hàm $size(tên mảng).
+module tb;
+  bit [3:0]sw;
+  initial begin
+    sw = 4'b1011;
+    for (int i = 0; i < $size(sw); i++) begin
+      $display ("sw[%0d] = %b", i, sw[i]);
+    end
+  end
+endmodule
+Ta xem xét ví dụ như bên trên và dưới đây là kết quả:
+ncsim> run
+sw[0] = 1
+sw[1] = 1
+sw[2] = 0
+sw[3] = 1
+
+
+Thêm một ví dụ khác về mảng hai chiều:
+module tb;
+  bit [1:0][3:0]   sw;   
+ 
+  initial begin
+    sw = 8'hAB;
+ 
+    $display ("sw = 0x%0h", sw);
+ 
+    for (int i = 0; i < $size(sw); i++) begin
+      $display ("sw[%0d] = %b (0x%0h)", i, sw[i], sw[i]);
+    end
+  end
+endmodule
+Và đây là kết quả:
+ncsim> run
+sw = 0xab
+sw[0] = 1011 (0xb)
+sw[1] = 1010 (0xa)
+
+
+
+
+
+
+module tb;
+  bit [1:0][3:0]   sw;   
+ 
+  initial begin
+    sw[0] = 4'hB;
+    sw[1] = 4'hA;
+ 
+    $display ("sw = 0x%0h", sw);
+ 
+    for (int i = 0; i < $size(sw); i++) begin
+      $display ("sw[%0d] = %b (0x%0h)", i, sw[i], sw[i]);
+      for (int j = 0; j < $size(sw[i]); j++) begin
+        $display ("sw[%0d][%0d] = %b (0x%0h)", i ,j , sw[i][j], sw[i][j]);
+      end
+    end
+  end
+endmodule
+
+ncsim> run
+sw = 0xab
+sw[0] = 1011 (0xb)
+sw[0][0] = 1 (0x1)
+sw[0][1] = 1 (0x1)
+sw[0][2] = 0 (0x0)
+sw[0][3] = 1 (0x1)
+sw[1] = 1010 (0xa)
+sw[1][0] = 0 (0x0)
+sw[1][1] = 1 (0x1)
+sw[1][2] = 0 (0x0)
+sw[1][3] = 1 (0x1)
+
+Bây giờ chúng ta sẽ cùng nhau tìm hiểu về unpacked array.
+Khác với packed array, Unpacked array có kích thước được định nghĩa sau tên mảng.
+Ví dụ:
+Logic var [3:0];
+Bit sw [1:0];
+Unpacked array có thể là fixed-size arrays, dynamic arrays, associative arrays hoặc là queues.
+Ta xét một số ví dụ như bên dưới để có thể thấy rõ sự khác biệt giữa packed array và unpacked array.
+module tb;
+  byte   sw [4];     
+ 
+  initial begin
+    foreach (sw[i]) begin
+      sw[i] = $random;
+      $display ("Assign 0x%h to index %d", sw[i], i);
+    end
+    $display ("sw = %p", sw);
+  end
+endmodule
+Ta có kết quả như bên dưới:
+ncsim> run
+Assign 0x24 to index 0
+Assign 0x81 to index 1
+Assign 0x09 to index 2
+Assign 0x63 to index 3
+sw = '{'h24, 'h81, 'h9, 'h63}
+
+Như vậy có thể thấy, unpacked array là một mảng thật sự. Các phần tử tách biệt nhau.
+module tb;
+  byte   sw [2][2];
+
+  initial begin
+    foreach (sw[i]) begin
+      foreach (sw[i][j]) begin
+            sw[i][j] = $random;
+        $display ("sw[%d][%d] = 0x%h", i, j, sw[i][j]);
+      end
+    end
+    $display ("sw = %p", sw);
+  end
+endmodule
+
+
+ncsim> run
+sw[          0][          0] = 0x24
+sw[          0][          1] = 0x81
+sw[          1][          0] = 0x09
+sw[          1][          1] = 0x63
+sw = '{'{'h24, 'h81}, '{'h9, 'h63}}
+
+
+Tìm hiểu phương pháp chuyển đổi data width (256 -> 64, 256 -> 128) chuẩn giao tiếp AXI protocal.
+ 
