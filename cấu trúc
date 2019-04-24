@@ -1,0 +1,150 @@
+
+
+Transaction:
+
+class my_transaction extends uvm_sequence_item;
+`uvm_object_utils(my_transaction)
+ 
+[Khai báo các biến giao tiếp với DUT ở đây]
+
+[Khai báo các constraint cho các biến bên trên ở đây]
+
+function new (string name = "");
+    super.new(name);
+  endfunction
+
+endclass: my_transaction
+
+Như vậy với transaction ta chỉ cần khai báo các biến giao tiếp với DUT và contrainst của nó.
+
+Sequence:
+class my_sequence extends uvm_sequence#(my_transaction);
+
+  `uvm_object_utils(my_sequence)
+`uvm_declare_p_sequencer (my_sequencer)
+
+
+  function new (string name = "");
+    super.new(name);
+  endfunction
+task pre_body ();
+[Code kiểm tra tín hiệu cờ]
+
+
+
+endtask
+
+  task body;
+[Tạo tín hiệu random ở đây]
+  endtask: body
+
+task post_body();
+[Code kiểm tra tín hiệu cờ sau “task body”]
+endtask
+
+endclass: my_sequence
+
+Với bộ sequence ta cần code trong task body, pre_body, post_body.
+Trong đó task pre_body và post_body là không bắt buộc. Thậm chí nếu bạn sử dụng macros uvm_do* trong “task body” thì “pre_body” và “post_body” là không cần thiết.  Trong thực tế người verify sẽ làm việc nhiều với sequence. Nó thật ra là công việc tạo test pattern trong verify.
+
+Driver:
+class my_driver extends uvm_driver #(my_transaction);
+
+  `uvm_component_utils(my_driver)
+
+  virtual dut_if dut_vif;
+
+  function new(string name, uvm_component parent);
+    super.new(name, parent);
+  endfunction
+
+  function void build_phase(uvm_phase phase);
+[Add code của bạn ở đây]
+  endfunction 
+
+  task run_phase(uvm_phase phase);
+[Add code của bạn ở đây]
+  endtask
+
+endclass: my_driver
+
+Monitor:
+
+class my_monitor extends uvm_monitor;
+   `uvm_component_utils (my_monitor)
+ 
+   virtual dut_if   vif;
+ 
+   uvm_analysis_port #(my_data)   mon_analysis_port;
+ 
+   function new (string name, uvm_component parent= null);
+      super.new (name, parent);
+   endfunction
+
+ 
+   virtual function void build_phase (uvm_phase phase);
+     [Thêm code tại đây]
+   endfunction
+ 
+   virtual task run_phase (uvm_phase phase);
+      [Thêm code tại đây]
+   endtask
+ 
+endclass
+
+Scoreboard:
+
+class my_scoreboard extends uvm_scoreboard;
+  `uvm_component_utils (my_scoreboard)
+ 
+  function new (string name = "my_scoreboard", uvm_component parent);
+    super.new (name, parent);
+  endfunction
+ 
+  uvm_analysis_imp #(apb_pkt, my_scoreboard) apb_export;
+ 
+  function void build_phase (uvm_phase phase);
+[Thêm code bạn ở đây]
+  endfunction
+ 
+  virtual function void write (apb_pkt data);
+[In dữ liệu ra để quan sát]
+  endfunction
+ 
+  virtual task run_phase (uvm_phase phase);
+    [Nhận data và gòi hàm so sánh kết quả]
+  endtask
+ 
+  virtual function void check_phase (uvm_phase phase);
+    [So sánh kết quả output từ DUT và kết quả dự đoán]
+  endfunction
+endclass
+
+
+
+
+agent:
+
+class my_agent extends uvm_agent;
+      `uvm_component_utils (my_agent)
+ 
+      my_driver                  m_drv0;
+      my_monitor                 m_mon0;
+      uvm_sequencer #(my_data)   m_seqr0;
+      agent_cfg                  m_agt_cfg;
+ 
+      function new (string name = "my_agent", uvm_component parent=null);
+         super.new (name, parent);
+      endfunction
+ 
+      virtual function void build_phase (uvm_phase phase);
+[Thêm code tại đây]
+      endfunction
+ 
+
+ 
+      virtual function void connect_phase (uvm_phase phase);
+      [Thêm code tại đây để connect 3 thành phần driver, sequencer, monitor lại với nhau]
+      endfunction
+   endclass
+
