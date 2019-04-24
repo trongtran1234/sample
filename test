@@ -1,0 +1,27 @@
+Combine test và unit test và system test
+Combine test: không sử dụng model, Môi trường CT thường rất lớn, Bao gồm toàn bộ các rtl được kết nối lại với nhau. Combine test thường cho việc kiểm tra đọc/ghi thanh ghi, kiểm tra connection giữa các thành phần.
+Chúng ta thường tạo pattern bằng cách viết ngôn ngử assembly để CPU có thể access đến các thanh ghi cụ thể (Thông qua địa chỉ của các thanh ghi này).
+Unit test: Dùng để kiểm tra tính đúng đắn của function. Môi trường test thường rất nhỏ.
+Vì chỉ test cho một function nhất định. Chúng ta thường dùng thư viện uvm (random test) để tạo môi trường. 
+Nó không cần toàn bộ rtl của hệ thống mà các chỉ cần một DUT cụ thể cần được test. Sau đó , các connection đến nó sẽ được giả lập bỡi model. Model là một code rtl được cung cấp bởi cadence haoc85 syntopsys. Chứa đầy đủ các input/output cần connect đến DUT nhầm thực hiện chức năng nhận data và trả data (giả lập như rtl hoàn chỉnh).
+Với môi turong72 UT kết quả được đánh giá là PASS nếu như function của bạn chạy đúng.
+Ví dụ: bạn có dut thực hiện tính năng cộng giữa hai số. Ban5 đánh giá kết quả là pass khi bạn dưa input vào và kết quã gửi ra đúng như mong đợi.
+Người chạy Ut chỉ cần tạo pattern. Partern ở đây không giống với pattern của CT vì nó là đưa vào các input cụ thể hoặc các tính iệu kiach1 thích ngẫu nhiên. Từ các tính iệu đó chúng ta sẽ quan sát kết quả đầu ra. Nếu đúng với kết quả chúng ta mong đợi. tôi lấy ví dụ:
+Ta có bộ cộng như bên dưới:
+
+Nhiệm vụ cũa ta là tạo ra 2 tính iệu input có thễ hcua71 tất cả trường hợp có thể có. Đưa vào DUT và quan sát kết quả đầu ra.
+Nếu ta đưa vào a = 2 và b = 3:
+Kết quả đầu ra c= 4 => Fail vì 2+3 # 4.
+Kết quả đầu ra c = 5 => Pass vì 2+3 = 5.
+Và bạn phải đảm bảo rằng bạn đưa vào đủ các trường hợp co1 thể có của a và b. Điều này được check bởi coverage. Nếu coverage đạt trên bao nhiêu phần % sẽ được chấp nhạn. Vậy tại sao chúng ta cần coverage. Đơn giản là vì nếu bạn sữ dụng môi turong72 random test các tín hiệu a và b sẽ được tạo ra một cách nguẫ nhiên. Khi đó bạn không thể đảm bảo rằng nó đưa vào đủ hết các trường hợp. Việc tính toán coverage là cần theit61 để biết chắc bạn đã pass hết tất cả các case có thể xảy ra.
+System test.
+System test là việc bạn kiểm tra hiệu xuất làm việc của toàn bộ hệ thống.
+Tôi lấy ví dụ với unit test bạn chỉ cần kết quả gửi ra đúng (Hay nói đúng hôn là function của bạn đúng) là bạn có thể dnah91 giá kết quả PASS. Tuy nhiên, thuc75 tế có một số trường hợp đặc biệt bạn không thể đoán trước được. Tôi lấy ví dụ master A gửi quá nhiều request đến slave b. Đôi khi slave B không thể xử lí kịp và trả về tính iệu . điều này dẫn đến kết quả dữ liệu bị mất, treo…
+Để kiểm tra cho việc này chúng ta cần phải có một môi turong72 để test nó. Và system test ra đời.
+Một lưu ý quan trọng là system test rất khó debug vì vậy nó chỉ nên được chạy tại các phase sau cùng.
+Ghĩa là CT và UT đã pass. Việc đãm bảo function đúng để tránh lãng phí thòi gian debug.
+Thực chất của system test là việc kiểm tra các bus, hay các interconnection.
+Có đảm bảo performance hay không. Vì hầu như các master hay slave đều được thay thế bằng model.
+Nhiệm vụ của người chạy là tạo các partern (Hay sequnse) bằng cách thiết lập các thông số cho model. Ví dụ bandwidth là bao nhiêu,data width…
+
+
