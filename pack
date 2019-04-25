@@ -1,0 +1,197 @@
+[ UVM ] Tìm hiểu về UVM package
+Tôi nghĩ rằng hầu hết chúng ta đều nhìn thấy một vài dòng code sau trong môi trường UVM rồi đúng không.
+`include "uvm_macros.svh"
+import uvm_pkg::*;
+
+Thế nhưng bạn có biết chức năng thực sự của các package này là gì không ?
+Trước khi phân tích về chức năng chính của các package chúng ta sẽ tìm hiểu vị trí các định nghĩa class được thực hiện.
+Tôi có hai giả thiết, Thứ nhất bạn phải định nghĩa class bên trong một module như bên dưới:
+module A;
+class B;
+….
+endclass: B
+class C;
+…
+endclass: C
+…
+endmodule
+Đối với cách này bạn không cần package, tuy nhiên nếu số lượng class lớn và phức tạp thì việc viết như thế này sẽ làm ảnh hưởng đến khả quản lí các class.
+Cách thứ hai là bạn định nghĩa các class bên ngoài module nhưng nằm trong cùng 1 file:
+class B;
+….
+endclass: B
+module A;
+….
+endmodule
+Việc này cũng được chắp nhận tuy nhiên có một vài lưu ý nhỏ về vị trí định nghĩa các class, Ta xét ví dụ bên dưới: 
+  class test1;
+  logic [1:0] sw;
+  test tes;
+  function new ();
+    sw[1:0] = 2'b00;
+  endfunction
+  task show;
+    sw = 2'b11;
+    $display("sw = %b", sw);
+  endtask
+endclass: test1
+
+
+class test;
+  rand logic [1:0];
+endclass: test
+
+module tb;
+  initial begin
+    test1 te;
+    te = new();
+    te.show;
+  end
+endmodule
+
+Trường hợp này sẽ báo lỗi vì class test1 được biên dịch trước class test nhưng trong class test1 có 1 biến được khai báo kiểu test. Như vậy khi khai báo các class cần phải theo thứ tự nghĩa là có một class khai báo 1 biến có kiểu dữ liệu là 1 class khác thì class khác đó phải được compile trước.
+Trong môi trường uvm các class rất phức tạp vì vậy chúng sẽ được chia ra thành các file riêng lẽ mà không nằm trong cùng 1 file đễ dễ quản lí. Tối lấy ví dụ một môi trường uvm cho bộ cộng 4 bit sẽ có các thành phần như bên dưới:
+add4bit_agent.sv
+add4bit_config.sv
+add4bit_driver.sv
+add4bit_env.sv
+add4bit_if.sv
+add4bit_monitor.sv
+add4bit_scoreboard.sv
+add4bit_sequense.sv
+add4bit_tb_top.sv
+add4bit_test.sv
+Bạn có hai cách để gọi các thành phần này trong module testbench top, để biên dịch chúng.
+Thêm các dòng code sau:
+    `include "add4bit_sequense.sv"
+    `include "add4bit_monitor.sv"
+    `include "add4bit_driver.sv"
+    `include "add4bit_agent.sv"
+    `include "add4bit_scoreboard.sv"
+    `include "add4bit_config.sv"
+    `include "add4bit_env.sv"
+    `include "add4bit_test.sv"
+Điều này cũng được đấy. Tuy nhiên cứ mỗi lần gọi các class này bạn lại cứ tốn nhiều dòng code để include chúng. Đôi khi bạn include thiếu, include không đúng thứ tự ưu tiên của class dẫn đến error xảy ra trong quá trình compile. Từ đó khái niệm package sẽ giúp bạn giải quyết vấn đề này.
+Cấu trúc của một package:
+package add4bit_pkg;
+    `include "add4bit_sequense.sv"
+………….
+    `include "add4bit_test.sv"
+endpackage: add4bit_pkg
+
+Khi bạn muốn gọi các file định nghĩa class. Bạn chỉ cần 2 dòng code sau là có thể định nghĩa được chúng.
+`include “tên_file_package”
+Import tên_package::*;
+Việc này ngắn hơn, đơn giản hơn các cách trước và tránh được các lỗi không đáng có khiến bạn mất thời gian để debug.
+Một cách định nghĩa khác bạn có thể thực hiện là định nghĩa các class  trực tiếp trong cấu trúc package như bên dưới:
+package A;
+class C;
+…
+endclass: C
+class B;
+…
+endclass: B
+….
+endpackage: A
+Cách gọi package thì tương tự như 2 dòng lệnh trên.
+Đến đây thì bạn đã rõ về cách sử dụng package rồi phải không nào.
+Dưới đây là một số cấu trúc package bạn có thể tham khảo:
+//Author: SCD/BUS/TrongTran
+//Date  : 03/29/2019
+`ifndef _UVM_PKG_
+`define _UVM_PKG_
+`include "uvm_macros.svh"
+package add4bit_pkg;
+    import uvm_pkg::*;
+    `include "add4bit_sequense.sv"
+    `include "add4bit_monitor.sv"
+    `include "add4bit_driver.sv"
+    `include "add4bit_agent.sv"
+    `include "add4bit_scoreboard.sv"
+    `include "add4bit_config.sv"
+    `include "add4bit_env.sv"
+    `include "add4bit_test.sv"
+endpackage: add4bit_pkg
+`endif
+
+Một mẫu cho cách khai báo thứ hai là:
+
+package my_testbench_pkg;
+  import uvm_pkg::*;
+  // The UVM sequence, transaction item, and driver are in these files:
+  `include "my_sequence.svh"
+  `include "my_driver.svh"
+  // The agent contains sequencer, driver, and monitor (not included)
+  class my_agent extends uvm_agent;
+    `uvm_component_utils(my_agent)
+    my_driver driver;
+    uvm_sequencer#(my_transaction) sequencer;
+    function new(string name, uvm_component parent);
+      super.new(name, parent);
+    endfunction
+    function void build_phase(uvm_phase phase);
+      driver = my_driver ::type_id::create("driver", this);
+      sequencer =
+        uvm_sequencer#(my_transaction)::type_id::create("sequencer", this);
+    endfunction    
+    // In UVM connect phase, we connect the sequencer to the driver.
+    function void connect_phase(uvm_phase phase);
+      driver.seq_item_port.connect(sequencer.seq_item_export);
+    endfunction
+    
+    task run_phase(uvm_phase phase);
+      // We raise objection to keep the test from completing
+      phase.raise_objection(this);
+      begin
+        my_sequence seq;
+        seq = my_sequence::type_id::create("seq");
+        seq.start(sequencer);
+      end
+      // We drop objection to allow the test to complete
+      phase.drop_objection(this);
+    endtask
+
+  endclass
+  
+  class my_env extends uvm_env;
+    `uvm_component_utils(my_env)
+    
+    my_agent agent;
+
+    function new(string name, uvm_component parent);
+      super.new(name, parent);
+    endfunction
+    
+    function void build_phase(uvm_phase phase);
+      agent = my_agent::type_id::create("agent", this);
+    endfunction
+
+  endclass
+  
+  class my_test extends uvm_test;
+    `uvm_component_utils(my_test)
+    
+    my_env env;
+
+    function new(string name, uvm_component parent);
+      super.new(name, parent);
+    endfunction
+    
+    function void build_phase(uvm_phase phase);
+      env = my_env::type_id::create("env", this);
+    endfunction
+    
+    task run_phase(uvm_phase phase);
+      // We raise objection to keep the test from completing
+      phase.raise_objection(this);
+      #10;
+      `uvm_warning("", "Hello World!")
+      // We drop objection to allow the test to complete
+      phase.drop_objection(this);
+    endtask
+
+  endclass
+  
+endpackage
+ 
+
