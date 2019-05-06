@@ -1,0 +1,45 @@
+Thiết kế memory là chìa khoá của thiết kế hệ thống. Hệ thống memory trên chip thường là phần đắt nhất và quyết định đến performance của hệ thống nhiều nhất.
+Trong 1 hệ thống SoC có 3 yếu tố quyết định đến hiệu suất của hệ thống đó là:
+Memory 
+Bộ vi xử lí (processors)
+Bus (interconnection) và IO.
+Trong đó Memory đóng vai trò cực kì quan trọng và là thành phần quan trọng nhất trong việc quyết định performance của chip SoC.
+Để thiết kế memory cho 1 chip cụ thể ta cần cân nhắc các yếu tố sau: 
+Hệ điều hành.
+Kích thước.
+Tính biến đổi của quy trình ứng dụng.
+Điều này quyết định quan trọng đến kích thước của memory và cách thức thiết kế memory thực hay ảo.
+bộ nhớ cache, bộ nhớ truy cập nhanh Một vùng đặc biệt của các chip nhớ tốc độ nhanh, được dành riêng để lưu giữ các thông tin thường xuyên được truy xuất từ RAM ra nhất. Đồng nghĩa với cache ngoài ( external cache). Bộ nhớ cache thường là một đoạn nhỏ ( 32 K đến 512 K) của các chip RAM tĩnh tốc độ rất nhanh ( SRAM) cùng với bus riêng của nó nối với đơn vị xử lý trung tâm ( CPU), và thường được dùng để lưu giữ dữ liệu và mã lệnh mà CPU hay đòi hỏi đến. Khi CPU đòi hỏi dùng lại dữ liệu này, nó sẽ được cung cấp ngay theo đúng tốc độ hoạt động của bộ vi xử lý. Vì cache giao thiệp trực tiếp với CPU, nên bus có thể dùng loại rộng để nâng cao hơn nữa hiệu suất của bộ nhớ. Bộ nhớ cache khác với cache phần mềm; đó là khu vực của bộ RAM bình thường, được dành riêng để lưu giữ những thông tin thường được lấy từ các ổ đĩa ra.
+Chúng ta có sự đánh đổi (trade-off) giữa 3 yếu tố: vi xử lí, bus và memory vì vậy trong bài này tôi sẽ xem xét các thành phần khác là lý tưởng để tập trung giải quyết và so sánh các vấn đề liên quan đến memory.
+1.	Bộ nhớ ngoài SoC: flash.
+Công nghệ Flash là một công nghệ phát triển nhanh với những cải tiến được công bố một cách thường xuyên. Flash không thể thay thế bộ nhớ một cách hoàn toàn nhưng có thể được xem như là một sự thay thế đĩa. Tuy nhiên, trong một số trường hợp và các điều kiện, nó có thể phục vụ mục đích kép của bộ nhớ và lưu trữ sao lưu không biến đổi. Bộ nhớ flash bao gồm một loạt các bóng bán dẫn cổng. Các bóng bán dẫn này tương tự như các bóng bán dẫn MOS nhưng có cấu trúc hai cổng: cổng điều khiển và cổng kết nối cách điện. Phí được lưu trữ trên cổng ating oating bị mắc kẹt ở đó, cung cấp lưu trữ không dễ bay hơi. Trong khi dữ liệu có thể được viết lại, công nghệ hiện tại có số lượng hạn chế các chu kỳ viết lại đáng tin cậy, thường là dưới một triệu. Vì sự xuống cấp khi sử dụng có thể là một vấn đề, việc phát hiện và sửa lỗi thường xuyên được thực hiện. Mặc dù mật độ là tuyệt vời cho các thiết bị bán dẫn, nhưng giới hạn chu kỳ ghi thường hạn chế việc sử dụng để lưu trữ dữ liệu không thường xuyên, chẳng hạn như các chương trình và các tệp lớn. Có hai loại triển khai ﬂ tro: NOR và NAND. Việc triển khai NOR là rõ ràng hơn, nhưng NAND cung cấp mật độ bit tốt hơn đáng kể. Cũng có thể triển khai lai NOR / NAND với mảng NOR đóng vai trò là bộ đệm cho mảng NAND lớn hơn. Bảng 4.3 cung cấp so sánh các triển khai này. Thẻ nhớ flash có nhiều định dạng khác nhau; kích thước lớn hơn thường cũ hơn (xem Bảng 4.2). Xúc xắc tro nhỏ có thể được xếp chồng lên nhau với chip SOC để trình bày một gói hệ thống / bộ nhớ duy nhất. Một tro cũng có thể được xếp chồng lên nhau để tạo ra các gói bộ nhớ đơn lớn (64 Điều 2 56 G B). Trong công nghệ hiện tại, ﬂ tro thường được tìm thấy trong các triển khai chết. Tuy nhiên, có một số biến thể tro được thiết kế đặc biệt để tương thích với công nghệ SOC thông thường. SONOS [201] là một ví dụ không biến đổi và Z - RAM [91] là một ví dụ thay thế DRAM. Cả hai dường như không bị hạn chế viết lại chu kỳ. Z - RAM dường như tương thích với tốc độ DRAM trong khi cung cấp mật độ được cải thiện. SONOS cung cấp mật độ nhưng với thời gian truy cập chậm hơn eDRAM.
+
+Dear Mr.Tung,
+
+Sorry for late response.
+I took a long holiday (30/4 and 1/5,  more 2 additional days) and just came back HCM city this evening. I recognize that I am not professional when make many mistakes. Sometime, I see that I am really not deserved to apply for this scholarship.
+
+Actually, I just referred to the scholarship’s information (all materials) on website of university of technology. There is no your presentation attached on website. I try to find but I cannot find out it.
+I searched the courses to apply by my-self on USN’s website and chose the wrong courses. When I received your feedback for the second time, I feel very disappointed about my-self.
+My intention is give up this time but when I received your email this afternoon. I think that I have to finish all procedures so I would like to re-send my application form again.
+Because the request is urgent, until now, I still have not the passport yet. On the holiday (30/4 and 1/5 and I took more 2 days), I try to get the passport but it seems that the procedure is very complicated and took a lot of time to finish. 
+Anyway, this is my mistakes when didn’t prepare everything carefully. 
+Updated points:
++ Add the due date for Ielts certification.
++ About the passport, I will try to finish and update later. 
++ Add the semester.
+
+My intention is that I will take the ielts test at the end of this month so I will supplement the certification at the middle of june. 
+BTW, If I cannot get the scholarship for this time. I will try to prepare everything carefully (ielts, passport,..) for the next time. This is the first time, I apply for a scholarship and make many mistakes.
+I will improve myself and get the lesson-learn. Hope that you can sympathize for many unacceptable mistakes.
+
+Best regards,
+Tran Van Trong.
+
+
+
+ 
+
+
+
+
