@@ -1,0 +1,48 @@
+I.	Mục tiêu
+Mục tiêu của bài thí nghiệm này là xây dựng bộ cộng 4bit bằng hai cách:
+1.	Sử dụng bộ cộng toàn phần (full adder) để thực hiện (structural model).
+2.	Sử dụng mô tả hành vi để thực hiện (behavioral model).
+
+II.	Tóm tắt các bước tiến hành.
+Trước tiên chúng ta tiến hành thiết kế cho các bộ cộng half adder ( 2 ngõ vào 1 bit , 2 ngõ ra 1 bit), full adder ( 3 ngõ vào 1 bit, 2 ngõ ra 1 bit), bộ cộng 4 bit hoàn chỉnh (2 ngõ vào 4 bit, 1 ngõ vào 1 bit, 1 ngõ ra 4 bit và 1 ngõ ra 1 bit). 
+Viết testbench để kiểm tra function cho Verilog code. Ở đây test bench là môi trường self-test. Nghĩa là tự test bench có thể đưa ra kết quả mô phỏng là “PASS” hoặc “FAIL” dựa vào quá trình so sánh. So sánh ở đây là so sánh kết quả ngõ ra từ Verilog và kết quả dự đoán (Hay kết quả theo spec ban đầu) dựa vào input đưa vào.
+Ngoài ra trong bài viết này còn xây dựng môi trường uvm để tiến hành random test cho DUT. Việc này sẽ đảm bảo chúng ta có thể cover toàn bộ các trường hợp có thể xẩy ra.
+
+III.	Lý thuyết hoạt động của mạch.
+Đối với mạch half adder ta có 2 giá trị ngõ vào 1 bit và 2 giá trị ngõ ra. Half adder giúp chúng ta tính toán kết quả cộng 2 ngõ vào 1 bit và cho ra giá trị ngõ ra 1 bit và 1 bit nhớ.
+Hình 3.1 Khối half adder.
+
+
+
+Bảng 3.1 Bảng giá trị vào ra cho khối half adder. 
+in_1	in_2	sum	c_out
+0	0	0	0
+0	1	1	0
+1	0	1	0
+1	1	0	1
+
+Khối full adder dùng để tính tổng giá trị 3 ngõ vào 1 bit (thêm 1 biến c_in) ở đây ta sử dụng 2 khối half adder để xây đựng khối full adder.
+Hình 3.2 Khối full adder.
+
+Hình 3.3 Xây dựng khối full adder từ 2 khối half adder.
+
+
+
+Bảng 3.2 bảng giá trị vào ra cho khối full adder.
+c_in	in_1	in_2	sum	c_out
+0	0	0	0	0
+0	0	1	1	0
+0	1	0	1	0
+0	1	1	0	1
+1	0	0	1	0
+1	0	1	0	1
+1	1	0	0	1
+1	1	1	1	1
+
+Bộ cộng 4 bit được ghép từ 4 khối full adder như bên dưới:
+
+Hình 3.4 Bộ cộng 4 bit.
+
+
+
+Verilog code
