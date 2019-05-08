@@ -1,0 +1,38 @@
+Toshiba (Fujio Masuoka) developed flash memory from EEPROM (electrically erasable programmable read-only memory) in the early 1980s and introduced it to the market in 1984.
+According to Toshiba, the name "flash" was suggested by Masuoka's colleague, Shōji Ariizumi, because the erasure process of the memory contents reminded him of the flash of a camera.[5] Masuoka and colleagues presented the invention at the IEEE 1987
+While EPROMs had to be completely erased before being rewritten, NAND-type flash memory may be written and read in blocks (or pages) which are generally much smaller than the entire device. NOR-type flash allows a single machine word (byte) to be written – to an erased location – or read independently
+As of 2013, flash memory costs much less than byte-programmable EEPROM and had become the dominant memory type wherever a system required a significant amount of non-volatile solid-state storage.
+NOR-based flash has long erase and write times, but provides full address and data buses, allowing random access to any memory location. This makes it a suitable replacement for older read-only memory (ROM) chips, which are used to store program code that rarely needs to be updated,
+NAND flash has reduced erase and write times, and requires less chip area per cell, thus allowing greater storage density and lower cost per bit than NOR flash; it also has up to 10 times the endurance of NOR flash. However, the I/O interface of NAND flash does not provide a random-access external address bus. Rather, data must be read on a block-wise basis, with typical block sizes of hundreds to thousands of bits. This makes NAND flash unsuitable as a drop-in replacement for program ROM, since most microprocessors and microcontrollers require byte-level random access. In this regard, NAND flash is similar to other secondary data storage devices, such as hard disks and optical media
+As of August 2017 microSD cards with capacity up to 400 GB (400 billion bytes) are available.
+Các tế bào có thể được xem như một công tắc điện trong đó dòng điện chạy giữa hai thiết bị đầu cuối (nguồn và cống) và được điều khiển bởi một cổng nổi (FG) và cổng điều khiển (CG). CG tương tự như cổng trong các bóng bán dẫn MOS khác, nhưng bên dưới này, có FG được cách điện xung quanh bởi một lớp oxit. FG được đặt xen kẽ giữa kênh CG và kênh MOSFET. Do FG bị cách ly bởi lớp cách điện của nó, các electron đặt trên nó bị giữ lại. Khi FG được tích điện bằng electron, điện tích này sẽ sàng lọc điện trường từ CG, do đó, làm tăng điện áp ngưỡng (VT1) của tế bào. Điều này có nghĩa là bây giờ điện áp cao hơn (VT2) phải được áp dụng cho CG để làm cho kênh dẫn. Để đọc giá trị từ bóng bán dẫn, một điện áp trung gian giữa các điện áp ngưỡng (VT1 & VT2) được áp dụng cho CG. Nếu kênh dẫn ở điện áp trung gian này, FG phải được tích điện (nếu được sạc, chúng tôi sẽ không được dẫn vì điện áp trung gian nhỏ hơn VT2), và do đó, "1" logic được lưu trữ trong cổng. Nếu kênh không dẫn ở điện áp trung gian, nó chỉ ra rằng FG được tích điện và do đó, "0" logic được lưu trữ trong cổng. Sự hiện diện của logic "0" hoặc "1" được cảm nhận bằng cách xác định xem có dòng điện chạy qua bóng bán dẫn hay không khi điện áp trung gian được khẳng định trên CG.
+
+Chèn cell của flash và cell của MOSFET để so sánh.
+As of 2012, there are attempts to use flash memory as the main computer memory, DRAM
+Cache
+DRAM today has a cycle time of around 70ns. Cache is on-die static RAM and has an access time of around 6ns.
+Bổ sung hình cache trong wiki về read và write.
+A cache hit occurs when the requested data can be found in a cache, while a cache miss occurs when it cannot.
+Bổ sung replace ment policies
+. Central processing units (CPUs) and hard disk drives (HDDs) frequently use a cache, as do web browsers and web servers.
+When a system writes data to cache, it must at some point write that data to the backing store as well. The timing of this write is controlled by what is known as the write policy. There are two basic writing approaches:
+
+    Write-through: write is done synchronously both to the cache and to the backing store.
+    Write-back (also called write-behind): initially, writing is done only to the cache. The write to the backing store is postponed until the modified content is about to be replaced by another cache block.
+
+A write-back cache is more complex to implement, since it needs to track which of its locations have been written over, and mark them as dirty for later writing to the backing store. The data in these locations are written back to the backing store only when they are evicted from the cache, an effect referred to as a lazy write. For this reason, a read miss in a write-back cache (which requires a block to be replaced by another) will often require two memory accesses to service: one to write the replaced data from the cache back to the store, and then one to retrieve the needed data.
+
+Since no data is returned to the requester on write operations, a decision needs to be made on write misses, whether or not data would be loaded into the cache. This is defined by these two approaches: 
+•	Write allocate (also called fetch on write): data at the missed-write location is loaded to cache, followed by a write-hit operation. In this approach, write misses are similar to read misses.
+•	No-write allocate (also called write-no-allocate or write around): data at the missed-write location is not loaded to cache, and is written directly to the backing store. In this approach, data is loaded into the cache on read misses only.
+Both write-through and write-back policies can use either of these write-miss policies, but usually they are paired in this way:[3] 
+Thêm bảng so sánh cache và dram.
+
+•	A write-back cache uses write allocate, hoping for subsequent writes (or even reads) to the same location, which is now cached.
+•	A write-through cache uses no-write allocate. Here, subsequent writes have no advantage, since they still need to be written directly to the backing store.
+Another issue is the fundamental tradeoff between cache latency and hit rate. Larger caches have better hit rates but longer latency. To address this tradeoff, many computers use multiple levels of cache, with small fast caches backed up by larger, slower caches. Multi-level caches generally operate by checking the fastest, level 1 (L1) cache first; if it hits, the processor proceeds at high speed. If that smaller cache misses, the next fastest cache (level 2, L2) is checked, and so on, before accessing external memory.
+
+As the latency difference between main memory and the fastest cache has become larger, some processors have begun to utilize as many as three levels of on-chip cache. Price-sensitive designs used this to pull the entire cache hierarchy on-chip, but by the 2010s some of the highest-performance designs returned to having large off-chip caches, which is often implemented in eDRAM and mounted on a multi-chip module, as a fourth cache level.
+
+
+Dynamic random-access memory (DRAM) is a type of random access semiconductor memory that stores each bit of data in a separate tiny capacitor within an integrated circuit. The capacitor can either be charged or discharged; these two states are taken to represent the two values of a bit, conventionally called 0 and 1.
