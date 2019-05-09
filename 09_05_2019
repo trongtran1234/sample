@@ -1,0 +1,867 @@
+I. Mục tiêu
+Mục tiêu của bài thí nghiệm này là xây dựng bộ cộng 4bit bằng hai cách:
+1. Sử dụng bộ cộng toàn phần (full adder) để thực hiện (structural model).
+2. Sử dụng mô tả hành vi để thực hiện (behavioral model).
+
+II. Tóm tắt các bước tiến hành.
+Trước tiên chúng ta tiến hành thiết kế cho các bộ cộng half adder ( 2 ngõ vào 1 bit , 2 ngõ ra 1 bit), full adder ( 3 ngõ vào 1 bit bao gồm thêm 1 biến nhớ c_in, 2 ngõ ra 1 bit), bộ cộng 4 bit hoàn chỉnh (2 ngõ vào 4 bit, 1 ngõ ra 4 bit và 1 ngõ ra 1 bit).  Kết quả của bộ cộng sẽ đi qua 1 FF để tín hiệu ngõ ra chạy cùng với clock và để dàng xây dựng  môi trường UVM cho việc random test. Đồng thời trong bài viết này mình cũng hướng dẫn các bạn thiết kế mạch reset đồng bộ cho tín hiệu reset. Chức năng của mạch này là điều khiển tín hiệu reset sao cho người dùng có thể reset hệ thống bất cứ lúc nào hay nói đúng hơn nếu bạn muốn reset hệ thống (areset 1->0) thì là bất đồng bộ (reset lúc nào cũng được, không cần chạy theo clock). Còn bạn muốn hệ thống không reset nữa (areset 0->1) thì phải chạy cùng với clock (đồng bộ). 
+Việc thừ hai là viết testbench để kiểm tra function cho Verilog code. Ở đây test bench là môi trường self-test. Nghĩa là tự test bench có thể đưa ra kết quả mô phỏng là “PASS” hoặc “FAIL” dựa vào quá trình so sánh. So sánh ở đây là so sánh kết quả ngõ ra từ Verilog và kết quả dự đoán (Hay kết quả theo spec ban đầu) dựa vào input đưa vào.
+Ngoài ra trong bài viết này còn xây dựng môi trường uvm để tiến hành random test cho Verilog code (Mình hay gọi là DUT (Design under test). Việc này sẽ đảm bảo chúng ta có thể cover toàn bộ các trường hợp có thể xẩy ra. Tính toán coverage.
+
+III. Lý thuyết hoạt động của mạch.
+Đối với mạch half adder ta có 2 giá trị ngõ vào 1 bit và 2 giá trị ngõ ra. Half adder giúp chúng ta tính toán kết quả cộng 2 ngõ vào 1 bit và cho ra giá trị ngõ ra 1 bit và 1 bit nhớ.
+Hình 3.1 Khối half adder.
+
+
+
+Bảng 3.1 Bảng giá trị vào/ra cho khối half adder. 
+in_1 in_2 sum c_out
+0 0 0 0
+0 1 1 0
+1 0 1 0
+1 1 0 1
+
+Khối full adder dùng để tính tổng giá trị 3 ngõ vào 1 bit (thêm 1 biến c_in) ở đây ta sử dụng 2 khối half adder để xây đựng khối full adder.
+Hình 3.2 Khối full adder.
+
+Hình 3.3 Xây dựng khối full adder từ 2 khối half adder.
+
+
+
+Bảng 3.2 bảng giá trị vào ra cho khối full adder.
+c_in in_1 in_2 sum c_out
+0 0 0 0 0
+0 0 1 1 0
+0 1 0 1 0
+0 1 1 0 1
+1 0 0 1 0
+1 0 1 0 1
+1 1 0 0 1
+1 1 1 1 1
+
+Bộ cộng 4 bit được ghép từ 4 khối full adder như bên dưới:
+
+Hình 3.4 Bộ cộng 4 bit.
+
+
+Kết quả của bộ cộng 4 bit sẽ đi qua 1 FF để tín hiệu ngõ ra chạy cùng với tín hiệu clock.
+Dưới đây là khối điều khiển tín hiệu reset đồng bộ cho mạch.
+Nguyên lí hoạt động:  Khi areset = 0, Ta có Q1 = 0 và Q2=0 ngay lập tức khi đó giá trị reset ngõ ra rst_n = 0 mà không phụ thuộc vào tín hiệu clock.
+Khi tín hiệu sreset = 1, tại cạnh clock lên của chu kì kế tiếp ta có Q1 = 1. Tuy nhiên giá trị Q2 lúc này vẫn bằng 0. Đến cạnh clock tiếp theo Q2 = Q1 = 1. Như vậy giá trị của tín hiệu reset sẽ bị delay 2 chu kì. Điều này đảm bảo hoạt của hệ thống.
+
+Verilog code
+//Author: TrongTran
+//Date  : 01/03/2019
+module add_4bit (clk, areset, in_1, in_2, sum, c_out);
+// Define bit width for inputs
+parameter WIDTH = 3;
+
+// Define input/output
+input clk;
+input areset;
+input [WIDTH:0] in_1;
+input [WIDTH:0] in_2;
+output [WIDTH:0] sum;
+output c_out;
+wire [WIDTH-1:0] c_tmp;
+wire [WIDTH:0] sum_tmp;
+wire c_re;
+reg [WIDTH:0] sum;
+reg c_out;
+wire rst_n;
+//reg c_out_tmp;
+//reg [WIDTH:0] sum_out_tmp;
+async_reset async_reset_0 (.areset(areset), .clk(clk), .rst_n(rst_n));
+
+// Add 2 bit in position [0]
+full_adder full_adder_00 (.in_1(in_1[0]), .in_2(in_2[0]),
+.c_in(1'b0), .out(sum_tmp[0]), .c_out(c_tmp[0]));
+
+// Add bits in  position [2:1]
+generate
+  genvar index;
+  for (index = 1; index < WIDTH; index = index + 1) begin: re_peat
+     full_adder full_adder_02 (.in_1(in_1[index]), .in_2(in_2[index]),
+     .c_in(c_tmp[index-1]), .out(sum_tmp[index]), .c_out(c_tmp[index]));
+  end
+endgenerate
+
+// Add bit in position [3]
+full_adder full_adder_03 (.in_1(in_1[3]), .in_2(in_2[3]),
+.c_in(c_tmp[2]), .out(sum_tmp[3]), .c_out(c_re));
+
+//assign sum = sum_tmp;
+//assign c_out = c_re;
+// Add FF for the result
+always @(posedge clk or negedge rst_n) begin
+   if (!rst_n) begin
+      c_out <= 1'b0;
+      sum <=  4'b0000;
+   end else begin
+      c_out <= c_re;
+       sum <= sum_tmp;
+   end
+end
+endmodule
+
+
+module full_adder (in_1, in_2, c_in, out, c_out);
+
+// Define input/output
+input in_1;
+input in_2;
+input c_in;
+output out;
+output c_out;
+
+wire sum_tmp, c_tmp_0, c_tmp_1;
+
+// Add 2 inputs
+half_adder half_adder_00 (.in_1(in_1), .in_2(in_2),
+                         .out(sum_tmp), .c_out(c_tmp_0));
+
+// Add sum of 2 input with carry 1
+half_adder half_adder_01 (.in_1(sum_tmp), .in_2(c_in),
+                         .out(out), .c_out(c_tmp_1));
+
+// Calculate carry out
+assign c_out = c_tmp_1 | c_tmp_0;
+
+endmodule
+
+
+module half_adder (in_1, in_2, out, c_out);
+// defien input/output
+input in_1;
+input in_2;
+output out;
+output c_out;
+
+// Calculate sum of 2 inputs
+assign out = in_1^in_2;
+// Calculate carry out
+assign c_out = in_1&in_2;
+
+endmodule
+module async_reset (areset, clk, rst_n);
+   input areset;
+   input clk;
+   output rst_n;
+   reg rst_tmp;
+   reg rst_n;
+
+   always @(posedge clk or negedge areset) begin
+      if (!areset) begin
+         rst_tmp = 1'b0;
+      end
+      else begin
+         rst_tmp = 1'b1;
+      end
+   end
+
+
+   always @(posedge clk or negedge areset) begin
+      if (!areset) begin
+         rst_n = 1'b0;
+      end
+      else begin
+         rst_n = rst_tmp;
+      end
+   end
+endmodule
+
+Để cho việc dễ dàng re-use ở đây mình sử dụng vòng lập :
+generate
+…
+endgenerate
+Các bạn đừng lo vì vòng lập này hoàn toàn có thể tổng hợp (Synthesis) được nhé.
+Nói về vòng lập generate thì việc này được sử dụng nhiều khi bạn muốn một tác vụ được lập lại nhiều lần. Với code C bạn sẽ sử dụng vòng lặp for trong Verilog cấu trúc generate cũng tương tự như for trong C.
+
+
+Test bench.
+//Author: TrongTran
+//Date: 06/03/2019
+//Name: Testbench for add 4 bits
+`timescale 1ns/1ns
+`include "add_4bit.v"
+
+module add_4bit_tb ();
+// Define parameter
+parameter WIDTH = 3;
+parameter TEST = 50;
+
+wire [WIDTH:0]sum;
+wire  c_out;
+reg clk;
+reg rst_n;
+reg c_cmp [TEST-1:0];
+reg [WIDTH:0] sum_cmp [TEST-1:0];
+reg [WIDTH:0]in_1;
+reg [WIDTH:0]in_2;
+integer i, j;
+add_4bit # (.WIDTH(WIDTH)) add_4bit_00 (.clk(clk), .areset(rst_n), .in_1(in_1), .in_2(in_2),
+                                  .sum(sum), .c_out(c_out));
+// Monitor the result
+initial begin
+  $monitor ("Time = %t, Reset = %d, Number[1] = %d, Number[2] = %d, Sum = %d, Carry = %d",
+           $time, rst_n, in_1, in_2, sum, c_out);
+end
+
+// Create the clock with T = 20ns
+initial begin
+   clk = 1;
+   forever #10 clk = ~clk;
+end
+
+
+// Create random value for 2 inputs
+initial begin
+   #1;
+   rst_n = 1;
+   for (i = 0; i < 20 ; i = i+1) begin
+      in_1 = $random ; // Random the value of in_1
+      in_2 = $random ; // Random the value of in_2
+      if (!rst_n) begin
+         c_cmp[i] = 1'b0;
+         sum_cmp[i] = 4'b0000;
+      end else begin
+         {c_cmp[i],sum_cmp[i]} = in_1 + in_2;
+      end
+
+      if ( i > 3 ) begin
+         rst_n = 1;
+      end
+      #20;
+   end
+   #1000;
+   $finish;
+end
+// If after 55 cycle, Simulation will pass.
+initial begin
+   repeat (55) begin
+      @ (posedge clk);
+   end
+      $display ("[%t]--------------- SIMULATION PASS ---------------", $time);
+      $finish;
+end
+
+
+// Apply system verilog to comparethe result.
+initial begin
+   integer k = 0;
+   reg [3:0] tmp;
+   reg tmp_c;
+   repeat (20) begin
+      @ (posedge clk) begin
+         $display ("k = %d, sum = %d, sum_cmp = %d", k,  sum, tmp);
+         if ((sum != tmp)||(c_out != tmp_c)) begin
+            $display ("-----SIMULATION: FAIL-------------");
+            $finish;
+         end
+         tmp = sum_cmp[k];
+         tmp_c = c_cmp[k];
+         k = k+1;
+      end
+   end
+end
+
+// Dump waveform to monitor signal
+initial begin
+   $vcdplusfile("add_4bit.vpd");
+   $vcdpluson();
+end
+
+endmodule
+
+Kết quả log file:
+Giả sử tôi sữa 1 đoạn code trong testbench để điều chỉnh kết quả dự đoán như bên dưới:
+initial begin
+   #1;
+   rst_n = 1;
+   for (i = 0; i < 20 ; i = i+1) begin
+      in_1 = $random ; // Random the value of in_1
+      in_2 = $random ; // Random the value of in_2
+      if (!rst_n) begin
+         c_cmp[i] = 1'b0;
+         sum_cmp[i] = 4'b0000;
+      end else begin
+         {c_cmp[i],sum_cmp[i]} = in_1 + in_2;
+      end
+
+      if ( i > 3 ) begin
+         rst_n = 1;
+      end
+      #20;
+   end
+   #1000;
+   $finish;
+End
+
+Sữa dòng 
+         {c_cmp[i],sum_cmp[i]} = in_1 + in_2; ->          {c_cmp[i],sum_cmp[i]} = in_1 + in_2 + 1;
+Như vậy kết quả log file ta có được như bên dưới:
+VCD+ Writer D-2009.12-4 Copyright 2009 Synopsys Inc.
+Time =                    0, Reset = x, Number[1] =  x, Number[2] =  x, Sum =  x, Carry = x
+Time =                    1, Reset = 1, Number[1] =  4, Number[2] =  1, Sum =  x, Carry = x
+k =           0, sum =  x, sum_cmp =  x
+Time =                   20, Reset = 1, Number[1] =  4, Number[2] =  1, Sum =  5, Carry = 0
+Time =                   21, Reset = 1, Number[1] =  9, Number[2] =  3, Sum =  5, Carry = 0
+k =           1, sum =  5, sum_cmp =  6
+-----SIMULATION: FAIL-------------
+$finish called from file "add_4bit_tb.v", line 81.
+
+Bây giờ ta sữa lại testbench cho đúng ta có kết quả log file như bên dưới:
+VCD+ Writer D-2009.12-4 Copyright 2009 Synopsys Inc.
+Time =                    0, Reset = x, Number[1] =  x, Number[2] =  x, Sum =  x, Carry = x
+Time =                    1, Reset = 1, Number[1] =  4, Number[2] =  1, Sum =  x, Carry = x
+k =           0, sum =  x, sum_cmp =  x
+Time =                   20, Reset = 1, Number[1] =  4, Number[2] =  1, Sum =  5, Carry = 0
+Time =                   21, Reset = 1, Number[1] =  9, Number[2] =  3, Sum =  5, Carry = 0
+k =           1, sum =  5, sum_cmp =  5
+Time =                   40, Reset = 1, Number[1] =  9, Number[2] =  3, Sum = 12, Carry = 0
+Time =                   41, Reset = 1, Number[1] = 13, Number[2] = 13, Sum = 12, Carry = 0
+k =           2, sum = 12, sum_cmp = 12
+Time =                   60, Reset = 1, Number[1] = 13, Number[2] = 13, Sum = 10, Carry = 1
+Time =                   61, Reset = 1, Number[1] =  5, Number[2] =  2, Sum = 10, Carry = 1
+k =           3, sum = 10, sum_cmp = 10
+Time =                   80, Reset = 1, Number[1] =  5, Number[2] =  2, Sum =  7, Carry = 0
+Time =                   81, Reset = 1, Number[1] =  1, Number[2] = 13, Sum =  7, Carry = 0
+k =           4, sum =  7, sum_cmp =  7
+Time =                  100, Reset = 1, Number[1] =  1, Number[2] = 13, Sum = 14, Carry = 0
+Time =                  101, Reset = 1, Number[1] =  6, Number[2] = 13, Sum = 14, Carry = 0
+k =           5, sum = 14, sum_cmp = 14
+Time =                  120, Reset = 1, Number[1] =  6, Number[2] = 13, Sum =  3, Carry = 1
+Time =                  121, Reset = 1, Number[1] = 13, Number[2] = 12, Sum =  3, Carry = 1
+k =           6, sum =  3, sum_cmp =  3
+Time =                  140, Reset = 1, Number[1] = 13, Number[2] = 12, Sum =  9, Carry = 1
+Time =                  141, Reset = 1, Number[1] =  9, Number[2] =  6, Sum =  9, Carry = 1
+k =           7, sum =  9, sum_cmp =  9
+Time =                  160, Reset = 1, Number[1] =  9, Number[2] =  6, Sum = 15, Carry = 0
+Time =                  161, Reset = 1, Number[1] =  5, Number[2] = 10, Sum = 15, Carry = 0
+k =           8, sum = 15, sum_cmp = 15
+Time =                  181, Reset = 1, Number[1] =  5, Number[2] =  7, Sum = 15, Carry = 0
+k =           9, sum = 15, sum_cmp = 15
+Time =                  200, Reset = 1, Number[1] =  5, Number[2] =  7, Sum = 12, Carry = 0
+Time =                  201, Reset = 1, Number[1] =  2, Number[2] = 15, Sum = 12, Carry = 0
+k =          10, sum = 12, sum_cmp = 12
+Time =                  220, Reset = 1, Number[1] =  2, Number[2] = 15, Sum =  1, Carry = 1
+Time =                  221, Reset = 1, Number[1] =  2, Number[2] = 14, Sum =  1, Carry = 1
+k =          11, sum =  1, sum_cmp =  1
+Time =                  240, Reset = 1, Number[1] =  2, Number[2] = 14, Sum =  0, Carry = 1
+Time =                  241, Reset = 1, Number[1] =  8, Number[2] =  5, Sum =  0, Carry = 1
+k =          12, sum =  0, sum_cmp =  0
+Time =                  260, Reset = 1, Number[1] =  8, Number[2] =  5, Sum = 13, Carry = 0
+Time =                  261, Reset = 1, Number[1] = 12, Number[2] = 13, Sum = 13, Carry = 0
+k =          13, sum = 13, sum_cmp = 13
+Time =                  280, Reset = 1, Number[1] = 12, Number[2] = 13, Sum =  9, Carry = 1
+Time =                  281, Reset = 1, Number[1] = 13, Number[2] =  5, Sum =  9, Carry = 1
+k =          14, sum =  9, sum_cmp =  9
+Time =                  300, Reset = 1, Number[1] = 13, Number[2] =  5, Sum =  2, Carry = 1
+Time =                  301, Reset = 1, Number[1] =  3, Number[2] = 10, Sum =  2, Carry = 1
+k =          15, sum =  2, sum_cmp =  2
+Time =                  320, Reset = 1, Number[1] =  3, Number[2] = 10, Sum = 13, Carry = 0
+Time =                  321, Reset = 1, Number[1] =  0, Number[2] =  0, Sum = 13, Carry = 0
+k =          16, sum = 13, sum_cmp = 13
+Time =                  340, Reset = 1, Number[1] =  0, Number[2] =  0, Sum =  0, Carry = 0
+Time =                  341, Reset = 1, Number[1] = 10, Number[2] = 13, Sum =  0, Carry = 0
+k =          17, sum =  0, sum_cmp =  0
+Time =                  360, Reset = 1, Number[1] = 10, Number[2] = 13, Sum =  7, Carry = 1
+Time =                  361, Reset = 1, Number[1] =  6, Number[2] =  3, Sum =  7, Carry = 1
+k =          18, sum =  7, sum_cmp =  7
+Time =                  380, Reset = 1, Number[1] =  6, Number[2] =  3, Sum =  9, Carry = 0
+Time =                  381, Reset = 1, Number[1] = 13, Number[2] =  3, Sum =  9, Carry = 0
+k =          19, sum =  9, sum_cmp =  9
+Time =                  400, Reset = 1, Number[1] = 13, Number[2] =  3, Sum =  0, Carry = 1
+[                1100]--------------- SIMULATION PASS ---------------
+
+Như vậy kết quả của quá trình simulation sẽ được in ra log file. Người verify chỉ cần dựa vào đó để đánh giá kết quả.
+Phần tiếp theo là môi trường UVM để tiến hành random test cho Verilog code của chúng ta.
+
+`ifndef _UVM_SEQUENCE_
+`define _UVM_SEQUENCE_
+class add4bit_trans extends uvm_sequence_item;
+  bit [3:0] sum;
+  bit c_out;
+  rand bit [3:0] in_1;
+  rand bit [3:0] in_2;
+  constraint con_in_1 {
+    in_1 inside {[0:15]};
+  }
+  constraint con_in_2 {
+    in_2 inside {[0:15]};
+  }
+  function new (string name = "");
+    super.new(name);
+  endfunction: new
+
+  `uvm_object_utils_begin(add4bit_trans)
+    `uvm_field_int(c_out, UVM_ALL_ON)
+    `uvm_field_int(sum, UVM_ALL_ON)
+    `uvm_field_int(in_1, UVM_ALL_ON)
+    `uvm_field_int(in_2, UVM_ALL_ON)
+  `uvm_object_utils_end
+endclass: add4bit_trans
+`endif
+`ifndef _UVM_SEQ_
+`define _UVM_SEQ_
+
+class add4bit_sequence extends uvm_sequence #(add4bit_trans);
+  `uvm_object_utils(add4bit_sequence)
+
+  function new (string name = "");
+    super.new(name);
+  endfunction: new
+
+  virtual task pre_body();
+     `uvm_info("CHECK_FLAG_PRE_BODY", $sformatf("Optional"), UVM_MEDIUM)
+      if (starting_phase != null) starting_phase.raise_objection(this);
+  endtask: pre_body
+
+   virtual task body();
+    add4bit_trans add_trans;
+    repeat (20) begin
+    add_trans = add4bit_trans::type_id::create(.name("add_trans"), .contxt(get_full_name()));
+    start_item(add_trans);
+      assert (add_trans.randomize ());
+//      `uvm_info("RANDOM_INPUT", $sformatf("in_1: %d, in_2: %d", add_trans.in_1, add_trans.in_2), UVM_LOW)
+    finish_item(add_trans);
+    end
+  endtask: body
+  virtual task post_body();
+    `uvm_info("CHECK_FLAG_POST_BODY", $sformatf("Optional"), UVM_MEDIUM)
+     if (starting_phase != null) starting_phase.drop_objection(this);
+  endtask:post_body
+endclass: add4bit_sequence
+`endif
+
+
+`ifndef _UVM_SEQER_
+`define _UVM_SEQER_
+typedef uvm_sequencer#(add4bit_trans) add4bit_sequencer ;
+`endif
+
+Bộ driver dùng để lái tín hiệu được tạo ra từ khối sequence để đưa vào DUT (Verilog code).
+
+`ifndef _UVM_DRIVER_
+`define _UVM_DRIVER_
+
+class add4bit_driver extends uvm_driver #(add4bit_trans);
+    `uvm_component_utils(add4bit_driver)
+    virtual add4bit_if vif;
+
+
+    function new (string name = "", uvm_component parent);
+        super.new(name, parent);
+    endfunction: new
+
+    function void build_phase(uvm_phase phase);
+        super.build_phase(phase);
+        void'(uvm_resource_db#(virtual add4bit_if)::read_by_name(.scope("ifs"), .name("add4bit_if"), .val(vif)));
+    endfunction: build_phase
+
+    task run_phase(uvm_phase phase);
+        drive ();
+    endtask: run_phase
+
+    virtual task drive();
+        integer counter = 0;
+        add4bit_trans trans;
+        forever begin
+            if (counter == 0) begin
+               seq_item_port.get_next_item(trans);
+            end
+            @(posedge vif.clk) begin
+                  counter = counter + 1;
+              if (counter == 1) begin
+                    vif.in_1 = trans.in_1;
+                    vif.in_2 = trans.in_2;
+                    counter = 0;
+                    seq_item_port.item_done();
+              end
+            end
+        end
+    endtask: drive
+
+endclass: add4bit_driver
+`endif
+
+Khối monitor dùng để quan sát các tín hiệu vào/ra, tín hiệu ra từ DUT còn tín hiệu vào từ interface (Thực chất là từ khối driver):
+//Author: SCD/BUS/TrongTran
+//Date  : 03/29/2019
+`ifndef _UVM_MONITOR_
+`define _UVM_MONITOR_
+class add4bit_monitor_before extends uvm_monitor;
+    `uvm_component_utils(add4bit_monitor_before)
+    uvm_analysis_port#(add4bit_trans) mon_before;
+    virtual add4bit_if vif;
+    function new (string name, uvm_component parent);
+        super.new(name, parent);
+    endfunction: new
+    function void build_phase(uvm_phase phase);
+        super.build_phase(phase);
+        void'(uvm_resource_db#(virtual add4bit_if)::read_by_name(.scope("ifs"), .name("add4bit_if"), .val(vif)));
+        mon_before = new(.name("mon_before"), .parent(this));
+    endfunction: build_phase
+    task run_phase(uvm_phase phase);
+        integer count = 0;
+        add4bit_trans trans_mo1;
+        trans_mo1 = add4bit_trans::type_id::create(.name("trans_mo1"), .contxt(get_full_name()));
+        forever begin
+            @(posedge vif.clk) begin
+                count = count + 1;
+            if (count == 1) begin
+                trans_mo1.sum = vif.sum;
+                trans_mo1.c_out = vif.c_out;
+                mon_before.write(trans_mo1);
+                `uvm_info("UVM_ACTUAL", $sformatf("sum: %d, c_out: %d",trans_mo1.sum, trans_mo1.c_out), UVM_LOW)
+                count = 0;
+            end
+            end
+        end
+    endtask: run_phase
+endclass: add4bit_monitor_before
+
+
+
+class add4bit_monitor_after extends uvm_monitor;
+    `uvm_component_utils(add4bit_monitor_after)
+    virtual add4bit_if vif;
+    uvm_analysis_port#(add4bit_trans) mon_after;
+    add4bit_trans trans_cv;
+    add4bit_trans trans_mo2;
+
+
+    covergroup add4bit_cov;
+        in_1_cv: coverpoint trans_cv.in_1;
+        in_2_cv: coverpoint trans_cv.in_2;
+        cross in_1_cv, in_2_cv;
+    endgroup: add4bit_cov
+    function new(string name, uvm_component parent);
+        super.new(name, parent);
+        add4bit_cov = new;
+    endfunction: new
+    function void build_phase(uvm_phase phase);
+        super.build_phase(phase);
+        void'(uvm_resource_db#(virtual add4bit_if)::read_by_name(.scope("ifs"), .name("add4bit_if"), .val(vif)));
+        mon_after = new(.name("mon_after"), .parent(this));
+    endfunction: build_phase
+    task run_phase(uvm_phase phase);
+        integer count = 0;
+        trans_mo2 = add4bit_trans::type_id::create(.name("trans_mo2"), .contxt(get_full_name()));
+        forever begin
+            @(posedge vif.clk) begin
+               count = count + 1;
+               if (count == 1) begin
+               if (vif.rst_n == 1'b0) begin
+                    trans_mo2.sum = 4'b0000;
+                    trans_mo2.c_out = 1'b0;
+                    count = 4;
+                    `uvm_info("UVM_EXPECT_RESET",$sformatf("in_1: %d, in_2: %d, sum: %d, c_out: %d", vif.in_1, vif.in_2, trans_mo2.sum, trans_mo2.c_out), UVM_LOW)
+                end else begin
+                    count = 4;
+                    {trans_mo2.c_out,trans_mo2.sum} = vif.in_1 + vif.in_2;
+                    `uvm_info("UVM_EXPECT",$sformatf("in_1: %d, in_2: %d, sum: %d, c_out: %d", vif.in_1, vif.in_2, trans_mo2.sum, trans_mo2.c_out), UVM_LOW)
+                end
+                end
+                if (count == 4) begin
+                    count = 0;
+                    trans_cv = trans_mo2;
+                    add4bit_cov.sample();
+                    mon_after.write(trans_mo2);
+                end
+            end
+        end
+    endtask: run_phase
+endclass: add4bit_monitor_after
+`endif
+
+Khối agent nhằm liên kết các khối trước đó lại với nhau: 
+//Author: SCD/BUS/TrongTran
+//Date  : 03/29/2019
+
+`ifndef _UVM_AGENT_
+`define _UVM_AGENT_
+
+class add4bit_agent extends uvm_agent;
+    `uvm_component_utils(add4bit_agent)
+
+        //Định nghĩa TLM liên kết giữa phần tử agent và 2 bộ monitor
+    uvm_analysis_port#(add4bit_trans) agent_before;
+    uvm_analysis_port#(add4bit_trans) agent_after;
+        // Định nghĩa 2 biến monitor để tiến hành connect với agent
+    add4bit_monitor_before monitor_before;
+    add4bit_monitor_after monitor_after;
+        //Ta sẽ liên kết 2 bộ dirver và sequencer với nhau thông qua agent bằng giao thức TLM.
+    add4bit_driver driver_trans;
+    add4bit_sequencer sequence_trans;
+    //Tạo giá trị đầu cho các biến trong class add4bit_agent
+    function new(string name = "", uvm_component parent);
+        super.new(name, parent);
+    endfunction: new
+
+        //Tiến hành bước build giá trị và khai báo giá trị khởi tạo cho các class được declare ở trên.
+    function void build_phase(uvm_phase phase);
+        super.build_phase(phase);
+        agent_before = new(.name("agent_before"), .parent(this));
+        agent_after = new(.name("agent_after"), .parent(this));
+        monitor_before = add4bit_monitor_before::type_id::create(.name("monitor_before"), .parent(this));
+        monitor_after = add4bit_monitor_after::type_id::create(.name("monitor_after"), .parent(this));
+        driver_trans = add4bit_driver::type_id::create(.name("driver_trans"), .parent(this));
+        sequence_trans = add4bit_sequencer::type_id::create(.name("sequence_trans"), .parent(this));
+    endfunction: build_phase
+
+        //Tiến hành connect các phần từ được định nghĩa ở trên. Driver<=>Sequencer, monitor_before <=> agent, mon_before<=> agent.
+    function void connect_phase(uvm_phase phase);
+        super.connect_phase(phase);
+        driver_trans.seq_item_port.connect(sequence_trans.seq_item_export);
+        monitor_before.mon_before.connect(agent_before);
+        monitor_after.mon_after.connect(agent_after);
+    endfunction: connect_phase
+endclass: add4bit_agent
+
+`endif
+
+Khối scoreboard để so sánh kết quả dự đoán và kết quả ngõ ra của DUT và in ra màn hình kết quả:
+//Author: SCD/BUS/TrongTran
+//Date  : 03/29/2019
+
+`ifndef _UVM_SCOREBOARD_
+`define _UVM_SCOREBOARD_
+
+class add4bit_scoreboard extends uvm_scoreboard;
+
+    `uvm_component_utils(add4bit_scoreboard)
+    uvm_analysis_export #(add4bit_trans) monitor_before;
+    uvm_analysis_export #(add4bit_trans) monitor_after;
+    add4bit_trans trans_before;
+    add4bit_trans trans_after;
+    uvm_tlm_analysis_fifo#(add4bit_trans) fifo_before;
+    uvm_tlm_analysis_fifo#(add4bit_trans) fifo_after;
+
+    function new (string name = "", uvm_component parent);
+        super.new(name, parent);
+        trans_before = new("trans_before");
+        trans_after = new("trans_after");
+    endfunction: new
+
+    function void build_phase(uvm_phase phase);
+        super.build_phase(phase);
+        fifo_before = new(.name("fifo_before"), .parent(this));
+        fifo_after = new(.name("fifo_after"), .parent(this));
+        monitor_before = new(.name("monitor_before"), .parent(this));
+        monitor_after = new(.name("monitor_after"), .parent(this));
+    endfunction: build_phase
+
+
+    function void connect_phase(uvm_phase phase);
+        monitor_before.connect(fifo_before.analysis_export);
+        monitor_after.connect(fifo_after.analysis_export);
+    endfunction: connect_phase
+
+
+    task run();
+        forever begin
+            fifo_before.get(trans_before);
+            fifo_after.get(trans_after);
+            compare();
+        end
+    endtask: run
+
+
+    virtual function void compare();
+        if (trans_before.sum == trans_after.sum) begin
+            `uvm_info("COMPARE_SUM", "PASS", UVM_ALL_ON)
+        end else begin
+            `uvm_info("COMPARE_SUM", "FAIL", UVM_ALL_ON)
+        end
+    endfunction: compare
+
+endclass: add4bit_scoreboard
+
+`endif
+
+Dưới đây là một số khối phụ khác:
+
+Khối env
+//Author: SCD/BUS/TrongTran
+//Date  : 03/29/2019
+
+`ifndef _UVM_ENV_
+`define _UVM_ENV_
+
+class add4bit_env extends uvm_env;
+    `uvm_component_utils(add4bit_env)
+
+    add4bit_scoreboard score_trans;
+    add4bit_agent agent_trans;
+
+    function new(string name = "", uvm_component parent);
+        super.new(name, parent);
+    endfunction: new
+
+    function void build_phase(uvm_phase phase);
+        super.build_phase(phase);
+        score_trans = add4bit_scoreboard::type_id::create(.name("score_trans"), .parent(this));
+        agent_trans = add4bit_agent::type_id::create(.name("agent_trans"), .parent(this));
+    endfunction: build_phase
+
+    function void connect_phase(uvm_phase phase);
+        super.connect_phase(phase);
+        agent_trans.agent_before.connect(score_trans.monitor_before);
+        agent_trans.agent_after.connect(score_trans.monitor_after);
+    endfunction: connect_phase
+
+endclass: add4bit_env
+
+`endif
+
+Khối interface
+//Author: SCD/BUS/TrongTran
+//Date  : 03/29/2019
+
+`ifndef _UVM_INTERFACE_
+`define _UVM_INTERFACE_
+
+interface add4bit_if;
+    logic clk;
+    logic rst_n;
+    logic [3:0] in_1;
+    logic [3:0] in_2;
+    logic [3:0] sum;
+    logic c_out;
+endinterface: add4bit_if
+
+`endif
+Khối package
+//Author: SCD/BUS/TrongTran
+//Date  : 03/29/2019
+
+`ifndef _UVM_PKG_
+`define _UVM_PKG_
+
+`include "uvm_macros.svh"
+
+package add4bit_pkg;
+    import uvm_pkg::*;
+    `include "add4bit_sequense.sv"
+    `include "add4bit_monitor.sv"
+    `include "add4bit_driver.sv"
+    `include "add4bit_agent.sv"
+    `include "add4bit_scoreboard.sv"
+    `include "add4bit_config.sv"
+    `include "add4bit_env.sv"
+    `include "add4bit_test.sv"
+endpackage: add4bit_pkg
+
+`endif
+
+Khối test bench top là khối testbench chính sẽ được thực thi :
+//Author: SCD/BUS/TrongTran
+//Date  : 03/29/2019
+
+`include "add4bit_pkg.sv"
+`include "add4bit_if.sv"
+`include "RTL/add_4bit.v"
+module add4bit_tb_top;
+
+import uvm_pkg::*;
+import add4bit_pkg::*;
+add4bit_if vif();
+
+add_4bit add_4bit_00 (vif.clk,
+                    vif.rst_n,
+                    vif.in_1,
+                    vif.in_2,
+                    vif.sum,
+                    vif.c_out);
+
+initial begin
+    uvm_resource_db #(virtual add4bit_if)::set(.scope("ifs"), .name("add4bit_if") , .val(vif));
+    run_test();
+end
+
+initial begin
+    vif.clk = 1;
+    vif.rst_n = 0;
+    #50;
+    vif.rst_n = 1;
+    #2000
+$finish;
+end
+
+always #10 vif.clk = ~vif.clk;
+
+initial begin
+$recordfile("filename.trn");
+$recordvars();
+end
+endmodule: add4bit_tb_top
+
+Cuối cùng là khối test:
+//Author: SCD/BUS/TrongTran
+//Date  : 03/29/2019
+
+`ifndef _UVM_TEST_
+`define _UVM_TEST_
+
+class add4bit_test extends uvm_test;
+`uvm_component_utils(add4bit_test)
+
+add4bit_env env_trans;
+    function new (string name = "", uvm_component parent);
+    super.new(name, parent);
+endfunction: new
+
+function void build_phase(uvm_phase phase);
+    super.build_phase(phase);
+    env_trans = add4bit_env::type_id::create(.name("env_trans"), .parent(this));
+endfunction: build_phase
+
+task run_phase(uvm_phase phase);
+    add4bit_sequence sequence_trans;
+    phase.raise_objection(.obj(this));
+    sequence_trans = add4bit_sequence::type_id::create(.name("sequence_trans"), .contxt(get_full_name()));
+    assert(sequence_trans.randomize());
+    `uvm_info("UVM_TEST_LP","START Simulation",UVM_NONE)
+    sequence_trans.start(env_trans.agent_trans.sequence_trans);
+    phase.drop_objection(.obj(this));
+endtask: run_phase
+endclass: add4bit_test
+`endif
+
+Và đây là kết quả khi chúng ta chạy chương trình:
+…….
+UVM_INFO add4bit_monitor.sv(33) @ 400: uvm_test_top.env_trans.agent_trans.monitor_before [UVM_ACTUAL] sum:  4, c_out: 0
+UVM_INFO add4bit_monitor.sv(85) @ 400: uvm_test_top.env_trans.agent_trans.monitor_after [UVM_EXPECT] in_1:  2, in_2:  2, sum:  4, c_out: 0
+UVM_INFO add4bit_sequense.sv(62) @ 400: uvm_test_top.env_trans.agent_trans.sequence_trans@@sequence_trans [CHECK_FLAG_POST_BODY] Optional
+UVM_INFO /common/appl/Cadence/INCISIV14.20.007/tools/methodology/UVM/CDNS-1.1d/sv/src/base/uvm_objection.svh(1268) @ 400: reporter [TEST_DONE] 'run' phase is ready to proceed to the 'extract' phase
+
+--- UVM Report catcher Summary ---
+
+
+Number of demoted UVM_FATAL reports  :    0
+Number of demoted UVM_ERROR reports  :    0
+Number of demoted UVM_WARNING reports:    0
+Number of caught UVM_FATAL reports   :    0
+Number of caught UVM_ERROR reports   :    0
+Number of caught UVM_WARNING reports :    0
+
+--- UVM Report Summary ---
+
+** Report counts by severity
+UVM_INFO :   45
+UVM_WARNING :    0
+UVM_ERROR :    0
+UVM_FATAL :    0
+** Report counts by id
+[CHECK_FLAG_POST_BODY]     1
+[CHECK_FLAG_PRE_BODY]     1
+[RNTST]     1
+[TEST_DONE]     1
+[UVM_ACTUAL]    20
+[UVM_EXPECT]    18
+[UVM_EXPECT_RESET]     2
+[UVM_TEST_LP]     1
+
+Bảng tra.
+
