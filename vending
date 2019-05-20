@@ -1,0 +1,94 @@
+//Author: TrongTran
+//Date: 01/03/2019
+
+module vending_machine (clk, rst_n, in_cost, CR, SI, WI, SO, WO, CO, CRO);
+
+
+// Define money
+parameter M_1 = 2'b01; //Define 1.000d
+parameter M_2 = 2'b10; //Define 2.000d
+parameter M_5 = 2'b11; //Define 5.000d
+parameter MAX_COST = 4'b1001; // 9.000d
+
+
+// Define state
+parameter IDLE_STATE    = 2'b00; //Do nothing
+parameter RECEIVE_STATE = 2'b01; //Receive money
+parameter RETURN_STATE  = 2'b10; //Rerurn soft drink
+parameter CHARGE_STATE  = 2'b11; //Charge money
+
+
+input clk;
+input rst_n;
+input [1:0] in_cost; // Input money
+input CR; //Return money
+input SI; //Choose soft drink
+input WI; //Choose water
+
+
+output SO; // Return soft drink
+output WO; // Return water
+output CO; // Change money
+output CRO // Return money;
+
+
+reg [1:0] state, next_state;
+reg [3:0] sum;
+reg [3:0] cost;
+
+assign cost =  (in_cost == M_1)? 4'b0001:
+               (in_cost == M_2)? 4'b0010:
+               (in_cost == M_5)? 4'b0101:4'b0000;
+
+
+
+always @ (*) begin
+  case(state) begin
+     IDLE_STATE: begin
+        if (money != 2'b00) begin
+           next_state = RECEIVE_STATE;
+        end
+        else begin
+           next_state = IDLE_STATE;
+        end
+     end
+     RECEIVE_STATE: begin
+        if ((sum >= 4'b1001)||(SI == 1'b1)||(WI == 1'b1)) begin
+           next_state = RETURN_STATE;
+        end
+        else if (CR == 1'b1) begin
+           next_state = CHARGE_STATE;
+        end
+        else begin
+           next_state = RECEIVE_STATE;
+        end
+     end
+     RETURN_STATE: begin
+        if (CI == 1'b1) begin
+           next_state = CHARGE_STATE;
+        end
+        else begin
+           next_state = RETURN_STATE;
+        end
+     end
+     CHARGE_STATE: begin
+        if (money != 2'b00) begin
+          next_state = RECEIVE_STATE;
+        end
+        else begin
+          next_state = IDLE_STATE;
+        end
+     end
+  endcase
+end
+
+
+
+always @(posedge clk or negedge rst_n) begin
+  if (!rst_n) begin
+     state <= IDLE_STATE;
+  else begin
+     state <= next_state;
+  end
+end
+
