@@ -483,3 +483,85 @@ package alu_pkg;
 endpackage: alu_pkg
 
 `endif
+
+
+UVM_INFO @ 0: reporter [RNTST] Running test alu_test...
+UVM_INFO alu_test.sv(25) @ 0: uvm_test_top [UVM_TEST_LP] START Simulation
+UVM_INFO alu_sequense.sv(63) @ 0: uvm_test_top.env_trans.agent_trans.sequence_trans@@sequence_trans [CHECK_FLAG_PRE_BODY] Optional
+UVM_INFO alu_scoreboard.sv(49) @ 40: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 80: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 120: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 160: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 200: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 240: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 280: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 320: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 360: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 400: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 440: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 480: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 520: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 560: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 600: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 640: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 680: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 720: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 760: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 800: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 840: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 880: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 920: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 960: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 1000: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 1040: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 1080: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 1120: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 1160: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 1200: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 1240: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 1280: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 1320: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 1360: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 1400: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 1440: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 1480: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 1520: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 1560: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 1600: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 1640: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 1680: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 1720: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 1760: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 1800: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 1840: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 1880: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 1920: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 1960: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_scoreboard.sv(49) @ 2000: uvm_test_top.env_trans.score_trans [COMPARE_PASS] PASS
+UVM_INFO alu_sequense.sv(81) @ 2000: uvm_test_top.env_trans.agent_trans.sequence_trans@@sequence_trans [CHECK_FLAG_POST_BODY] Optional
+UVM_INFO /common/appl/Cadence/INCISIV14.20.007/tools/methodology/UVM/CDNS-1.1d/sv/src/base/uvm_objection.svh(1268) @ 2000: reporter [TEST_DONE] 'run' phase is ready to proceed to the 'extract' phase
+
+--- UVM Report catcher Summary ---
+
+
+Number of demoted UVM_FATAL reports  :    0
+Number of demoted UVM_ERROR reports  :    0
+Number of demoted UVM_WARNING reports:    0
+Number of caught UVM_FATAL reports   :    0
+Number of caught UVM_ERROR reports   :    0
+Number of caught UVM_WARNING reports :    0
+
+--- UVM Report Summary ---
+
+** Report counts by severity
+UVM_INFO :   55
+UVM_WARNING :    0
+UVM_ERROR :    0
+UVM_FATAL :    0
+** Report counts by id
+[CHECK_FLAG_POST_BODY]     1
+[CHECK_FLAG_PRE_BODY]     1
+[COMPARE_PASS]    50
+[RNTST]     1
+[TEST_DONE]     1
+[UVM_TEST_LP]     1
