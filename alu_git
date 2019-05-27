@@ -1,0 +1,485 @@
+`ifndef _UVM_SEQUENCE_
+`define _UVM_SEQUENCE_
+
+class alu_trans extends uvm_sequence_item;
+
+  bit [3:0] out;
+  bit carry_out;
+
+  rand bit [3:0] in_1;
+  rand bit [3:0] in_2;
+  rand bit carry_in;
+  rand bit M;
+  rand bit S0;
+  rand bit S1;
+
+  constraint con_in_1 {
+    in_1 inside {[0:15]};
+  }
+
+  constraint con_in_2 {
+    in_2 inside {[0:15]};
+  }
+
+
+  function new (string name = "");
+    super.new(name);
+  endfunction: new
+
+  `uvm_object_utils_begin(alu_trans)
+    `uvm_field_int(carry_out, UVM_ALL_ON)
+    `uvm_field_int(out, UVM_ALL_ON)
+    `uvm_field_int(in_1, UVM_ALL_ON)
+    `uvm_field_int(in_2, UVM_ALL_ON)
+    `uvm_field_int(carry_in, UVM_ALL_ON)
+    `uvm_field_int(M, UVM_ALL_ON)
+    `uvm_field_int(S0, UVM_ALL_ON)
+    `uvm_field_int(S1, UVM_ALL_ON)
+  `uvm_object_utils_end
+
+endclass: alu_trans
+`endif
+
+`ifndef _UVM_SEQER_
+`define _UVM_SEQER_
+
+typedef uvm_sequencer#(alu_trans) alu_sequencer ;
+`endif
+
+
+
+`ifndef _UVM_SEQ_
+`define _UVM_SEQ_
+
+class alu_sequence extends uvm_sequence #(alu_trans);
+  `uvm_object_utils(alu_sequence)
+  `uvm_declare_p_sequencer(alu_sequencer)
+
+  function new (string name = "");
+    super.new(name);
+  endfunction: new
+
+  virtual task pre_body();
+     `uvm_info("CHECK_FLAG_PRE_BODY", $sformatf("Optional"), UVM_MEDIUM)
+      if (starting_phase != null) starting_phase.raise_objection(this);
+  endtask: pre_body
+
+   virtual task body();
+    alu_trans add_trans;
+    repeat (100) begin
+    add_trans = alu_trans::type_id::create(.name("add_trans"), .contxt(get_full_name()));
+    `uvm_do_on_with(add_trans, p_sequencer, { in_1 inside {[0:15]}; in_2 inside {[0:15]}; M inside {[0:1]}; S1 inside {[0:1]}; S0 inside {[0:1]}; carry_in inside {[0:1]};})
+    end
+  endtask: body
+
+
+  virtual task post_body();
+    `uvm_info("CHECK_FLAG_POST_BODY", $sformatf("Optional"), UVM_MEDIUM)
+     if (starting_phase != null) starting_phase.drop_objection(this);
+  endtask:post_body
+
+
+
+endclass: alu_sequence
+`endif
+//Author: SCD/BUS/TrongTran
+//Date  : 03/29/2019
+
+`ifndef _UVM_MONITOR_
+`define _UVM_MONITOR_
+
+class alu_monitor_before extends uvm_monitor;
+    `uvm_component_utils(alu_monitor_before)
+    uvm_analysis_port#(alu_trans) mon_before;
+    virtual alu_if vif;
+
+    function new (string name, uvm_component parent);
+        super.new(name, parent);
+    endfunction: new
+
+    function void build_phase(uvm_phase phase);
+        super.build_phase(phase);
+        void'(uvm_resource_db#(virtual alu_if)::read_by_name(.scope("ifs"), .name("alu_if"), .val(vif)));
+        mon_before = new(.name("mon_before"), .parent(this));
+    endfunction: build_phase
+
+    task run_phase(uvm_phase phase);
+        integer count = 0;
+        alu_trans trans_mo1;
+        trans_mo1 = alu_trans::type_id::create(.name("trans_mo1"), .contxt(get_full_name()));
+        forever begin
+            @(posedge vif.clk) begin
+                trans_mo1.out = vif.out;
+                trans_mo1.carry_out = vif.carry_out;
+                mon_before.write(trans_mo1);
+            end
+        end
+    endtask: run_phase
+
+endclass: alu_monitor_before
+
+
+
+class alu_monitor_after extends uvm_monitor;
+    `uvm_component_utils(alu_monitor_after)
+    virtual alu_if vif;
+    uvm_analysis_port#(alu_trans) mon_after;
+    alu_trans trans_cv;
+    alu_trans trans_mo2;
+    alu_trans trans_tmp;
+
+    covergroup alu_cov;
+        in_1_cv: coverpoint trans_cv.in_1;
+        in_2_cv: coverpoint trans_cv.in_2;
+        carry_in_cv: coverpoint trans_cv.carry_in;
+        M_cv: coverpoint trans_cv.M;
+        S0_cv: coverpoint trans_cv.S0;
+        S1_cv: coverpoint trans_cv.S1;
+        cross in_1_cv, in_2_cv, carry_in_cv, M_cv, S0_cv, S1_cv;
+    endgroup: alu_cov
+
+
+    function new(string name, uvm_component parent);
+        super.new(name, parent);
+        alu_cov = new;
+    endfunction: new
+
+    function void build_phase(uvm_phase phase);
+        super.build_phase(phase);
+        void'(uvm_resource_db#(virtual alu_if)::read_by_name(.scope("ifs"), .name("alu_if"), .val(vif)));
+        mon_after = new(.name("mon_after"), .parent(this));
+    endfunction: build_phase
+
+    task run_phase(uvm_phase phase);
+        integer count = 0;
+        integer cou = 0;
+        logic [3:0] out_1;
+
+        trans_mo2 = alu_trans::type_id::create(.name("trans_mo2"), .contxt(get_full_name()));
+        trans_tmp = alu_trans::type_id::create(.name("trans_tmp"), .contxt(get_full_name()));
+        forever begin
+            @(posedge vif.clk or negedge vif.rst_n) begin
+                if (vif.rst_n == 1'b0) begin
+                    trans_mo2.out = 4'b0000;
+                    trans_mo2.carry_out = 1'b0;
+
+                end else begin
+                    case ({vif.M, vif.S1, vif.S0})
+                       3'b000: begin
+                           trans_mo2.carry_out = 1'b0;
+                           trans_mo2.out = vif.in_1&vif.in_2;
+                       end
+                       3'b001: begin
+                           trans_mo2.carry_out = 1'b0;
+                           trans_mo2.out = vif.in_1|vif.in_2;
+                       end
+                       3'b010: begin
+                           trans_mo2.carry_out = 1'b0;
+                           trans_mo2.out = vif.in_1^vif.in_2;
+                       end
+                       3'b011: begin
+                           trans_mo2.carry_out = 1'b0;
+                           trans_mo2.out = ~(vif.in_1^vif.in_2);
+                       end
+                       3'b100: begin
+                           {trans_mo2.carry_out, trans_mo2.out} = vif.in_1+vif.carry_in;
+                       end
+                       3'b101: begin
+                                 {trans_mo2.carry_out, trans_mo2.out}  = vif.in_1+vif.in_2+vif.carry_in;
+                               end
+                       3'b110: begin
+                                 out_1 = ~vif.in_2;
+                                 {trans_mo2.carry_out, trans_mo2.out}  = out_1+vif.in_1+vif.carry_in;
+                               end
+                       3'b111: begin
+                                 out_1 = ~vif.in_1;
+                                 {trans_mo2.carry_out, trans_mo2.out}  = out_1+vif.in_2+vif.carry_in;
+                               end
+                       default: {trans_mo2.carry_out,trans_mo2.out} = 5'b00000;
+                    endcase
+
+                end
+                trans_cv = trans_mo2;
+                alu_cov.sample();
+                end
+        @(posedge vif.clk) begin
+                mon_after.write(trans_mo2);
+            end
+        end
+    endtask: run_phase
+endclass: alu_monitor_after
+
+`endif
+//Author: SCD/BUS/TrongTran
+//Date  : 03/29/2019
+
+`ifndef _UVM_DRIVER_
+`define _UVM_DRIVER_
+
+class alu_driver extends uvm_driver #(alu_trans);
+    `uvm_component_utils(alu_driver)
+    virtual alu_if vif;
+
+
+    function new (string name = "", uvm_component parent);
+        super.new(name, parent);
+    endfunction: new
+
+    function void build_phase(uvm_phase phase);
+        super.build_phase(phase);
+        void'(uvm_resource_db#(virtual alu_if)::read_by_name(.scope("ifs"), .name("alu_if"), .val(vif)));
+    endfunction: build_phase
+
+    task run_phase(uvm_phase phase);
+        drive ();
+    endtask: run_phase
+
+    virtual task drive();
+        alu_trans trans;
+        forever begin
+            seq_item_port.get_next_item(trans);
+            @(posedge vif.clk) begin
+                    vif.in_1 = trans.in_1;
+                    vif.in_2 = trans.in_2;
+                    vif.carry_in = trans.carry_in;
+                    vif.M = trans.M;
+                    vif.S0 = trans.S0;
+                    vif.S1 = trans.S1;
+                    seq_item_port.item_done();
+            end
+        end
+    endtask: drive
+endclass: alu_driver
+
+`endif
+//Author: SCD/BUS/TrongTran
+//Date  : 03/29/2019
+
+`ifndef _UVM_AGENT_
+`define _UVM_AGENT_
+
+class alu_agent extends uvm_agent;
+    `uvm_component_utils(alu_agent)
+
+        //Định nghĩa TLM liên kết giữa phần tử agent và 2 bộ monitor
+    uvm_analysis_port#(alu_trans) agent_before;
+    uvm_analysis_port#(alu_trans) agent_after;
+        // Định nghĩa 2 biến monitor để tiến hành connect với agent
+    alu_monitor_before monitor_before;
+    alu_monitor_after monitor_after;
+        //Ta sẽ liên kết 2 bộ dirver và sequencer với nhau thông qua agent bằng giao thức TLM.
+    alu_driver driver_trans;
+    alu_sequencer sequence_trans;
+    //Tạo giá trị đầu cho các biến trong class alu_agent
+    function new(string name = "", uvm_component parent);
+        super.new(name, parent);
+    endfunction: new
+
+        //Tiến hành bước build giá trị và khai báo giá trị khởi tạo cho các class được declare ở trên.
+    function void build_phase(uvm_phase phase);
+        super.build_phase(phase);
+        agent_before = new(.name("agent_before"), .parent(this));
+        agent_after = new(.name("agent_after"), .parent(this));
+        monitor_before = alu_monitor_before::type_id::create(.name("monitor_before"), .parent(this));
+        monitor_after = alu_monitor_after::type_id::create(.name("monitor_after"), .parent(this));
+        driver_trans = alu_driver::type_id::create(.name("driver_trans"), .parent(this));
+        sequence_trans = alu_sequencer::type_id::create(.name("sequence_trans"), .parent(this));
+    endfunction: build_phase
+
+        //Tiến hành connect các phần từ được định nghĩa ở trên. Driver<=>Sequencer, monitor_before <=> agent, mon_before<=> agent.
+    function void connect_phase(uvm_phase phase);
+        super.connect_phase(phase);
+        driver_trans.seq_item_port.connect(sequence_trans.seq_item_export);
+        monitor_before.mon_before.connect(agent_before);
+        monitor_after.mon_after.connect(agent_after);
+    endfunction: connect_phase
+endclass: alu_agent
+
+`endif
+//Author: SCD/BUS/TrongTran
+//Date  : 03/29/2019
+
+`ifndef _UVM_SCOREBOARD_
+`define _UVM_SCOREBOARD_
+
+class alu_scoreboard extends uvm_scoreboard;
+
+    `uvm_component_utils(alu_scoreboard)
+    uvm_analysis_export #(alu_trans) monitor_before;
+    uvm_analysis_export #(alu_trans) monitor_after;
+    alu_trans trans_before;
+    alu_trans trans_after;
+    uvm_tlm_analysis_fifo#(alu_trans) fifo_before;
+    uvm_tlm_analysis_fifo#(alu_trans) fifo_after;
+
+    function new (string name = "", uvm_component parent);
+        super.new(name, parent);
+        trans_before = new("trans_before");
+        trans_after = new("trans_after");
+    endfunction: new
+
+    function void build_phase(uvm_phase phase);
+        super.build_phase(phase);
+        fifo_before = new(.name("fifo_before"), .parent(this));
+        fifo_after = new(.name("fifo_after"), .parent(this));
+        monitor_before = new(.name("monitor_before"), .parent(this));
+        monitor_after = new(.name("monitor_after"), .parent(this));
+    endfunction: build_phase
+
+
+    function void connect_phase(uvm_phase phase);
+        monitor_before.connect(fifo_before.analysis_export);
+        monitor_after.connect(fifo_after.analysis_export);
+    endfunction: connect_phase
+
+
+    task run();
+        forever begin
+            fifo_before.get(trans_before);
+            fifo_after.get(trans_after);
+            compare();
+        end
+    endtask: run
+
+
+    virtual function void compare();
+        if ((trans_before.out == trans_after.out)&&(trans_before.carry_out == trans_after.carry_out)) begin
+            `uvm_info("COMPARE_PASS", "PASS", UVM_LOW)
+        end else begin
+            `uvm_info("COMPARE_FAIL", "FAIL", UVM_LOW)
+        end
+    endfunction: compare
+
+endclass: alu_scoreboard
+
+`endif
+//Author: SCD/BUS/TrongTran
+//Date  : 03/29/2019
+
+`ifndef _UVM_CONFIGURATION_
+`define _UVM_CONFIGURATION_
+
+class alu_configuration extends uvm_object;
+    `uvm_object_utils(alu_configuration)
+    function new (string name = "");
+        super.new(name);
+    endfunction: new
+endclass: alu_configuration
+
+`endif
+//Author: SCD/BUS/TrongTran
+//Date  : 03/29/2019
+
+`ifndef _UVM_ENV_
+`define _UVM_ENV_
+
+class alu_env extends uvm_env;
+    `uvm_component_utils(alu_env)
+
+    alu_scoreboard score_trans;
+    alu_agent agent_trans;
+
+    function new(string name = "", uvm_component parent);
+        super.new(name, parent);
+    endfunction: new
+
+    function void build_phase(uvm_phase phase);
+        super.build_phase(phase);
+        score_trans = alu_scoreboard::type_id::create(.name("score_trans"), .parent(this));
+        agent_trans = alu_agent::type_id::create(.name("agent_trans"), .parent(this));
+    endfunction: build_phase
+
+    function void connect_phase(uvm_phase phase);
+        super.connect_phase(phase);
+        agent_trans.agent_before.connect(score_trans.monitor_before);
+        agent_trans.agent_after.connect(score_trans.monitor_after);
+    endfunction: connect_phase
+
+endclass: alu_env
+
+`endif
+//Author: SCD/BUS/TrongTran
+//Date  : 03/29/2019
+
+`ifndef _UVM_TEST_
+`define _UVM_TEST_
+
+class alu_test extends uvm_test;
+`uvm_component_utils(alu_test)
+
+alu_env env_trans;
+    function new (string name = "", uvm_component parent);
+    super.new(name, parent);
+endfunction: new
+
+function void build_phase(uvm_phase phase);
+    super.build_phase(phase);
+    env_trans = alu_env::type_id::create(.name("env_trans"), .parent(this));
+endfunction: build_phase
+
+task run_phase(uvm_phase phase);
+    alu_sequence sequence_trans;
+    phase.raise_objection(.obj(this));
+    sequence_trans = alu_sequence::type_id::create(.name("sequence_trans"), .contxt(get_full_name()));
+    assert(sequence_trans.randomize());
+    `uvm_info("UVM_TEST_LP","START Simulation",UVM_NONE)
+    sequence_trans.start(env_trans.agent_trans.sequence_trans);
+    phase.drop_objection(.obj(this));
+endtask: run_phase
+
+endclass: alu_test
+
+`endif
+//Author: SCD/BUS/TrongTran
+//Date  : 03/29/2019
+
+`ifndef _UVM_INTERFACE_
+`define _UVM_INTERFACE_
+
+interface alu_if (input bit clk, input bit rst_n);
+//    logic clk;
+//    logic rst_n;
+    logic [3:0] in_1;
+    logic [3:0] in_2;
+    logic carry_in;
+    logic S0;
+    logic S1;
+    logic M;
+    logic carry_out;
+    logic [3:0] out;
+
+
+//input  clk;
+//input  rst_n;
+//input  [3:0] in_1;
+//input  [3:0] in_2;
+//input  carry_in;
+//input  S0;
+//input  S1;
+//input  M;
+//output wire carry_out;
+//output wire [3:0] out;
+endinterface: alu_if
+
+`endif
+//Author: SCD/BUS/TrongTran
+//Date  : 03/29/2019
+
+`ifndef _UVM_PKG_
+`define _UVM_PKG_
+
+`include "uvm_macros.svh"
+
+package alu_pkg;
+    import uvm_pkg::*;
+    `include "alu_sequense.sv"
+    `include "alu_monitor.sv"
+    `include "alu_driver.sv"
+    `include "alu_agent.sv"
+    `include "alu_scoreboard.sv"
+    `include "alu_config.sv"
+    `include "alu_env.sv"
+    `include "alu_test.sv"
+endpackage: alu_pkg
+
+`endif
