@@ -1,0 +1,80 @@
+https://www.design-reuse.com/articles/13981/fpga-implementation-of-aes-encryption-and-decryption.html
+
+
+Bài này mình dịch từ bài báo: http://www-labsticc.univ-ubs.fr/~gogniat/papers/gogniat_2006rce.pdf
+Các tác giả: Guy Gogniat, Wayne Burleson, Mike O'Malley, and Lilian Bossuet.
+Mọi người tham khảo nhé.
+
+Dự án thiết kế IPsec trong FPGA và vi điều khiển.
+
+TÓM TẮT
+Bài báo này mô tả một dự án đã được thực hiện trong Đại học Massachusetts, Amherst, Hoa Kỳ. Mục tiêu của dự án là triển khai một tập hợp con của giao thức IPSec bằng bộ vi điều khiển PIC và APEX FPGA. Mục tiêu là để cho phép sinh viên tiếp cận với một loạt các kỹ năng từ ứng dụng mạng và mật mã đến lắp ráp, làm quen với ngôn ngữ VHDL, phát triển một phần của một hệ thống lớn. Hơn nữa, vì bảy sinh viên đã tham gia vào dự án, một cách tiếp cận "công nghiệp" đã được xem xét thông qua một người quản lý dự án và các nhóm bên dưới nhóm. Trong dự án này, có nhiều hệ thống con phải liên lạc với nhau để đạt được sản phẩm cuối cùng: PC và PIC thông qua kết nối nối tiếp, PIC và FPGA thông qua một bus hai chiều, PIC và thiết bị đầu cuối sử dụng kết nối nối tiếp . Dữ liệu được mã hóa trong IPSec bằng thuật toán RC6. 
+
+GIỚI THIỆU
+Mục tiêu của dự án là tiến hành trên vi điều khiển PIC một tập hợp con của giao thức IPSec. IPSec là một phần của giao thức IPv6 để đảm bảo tính bảo mật của dữ liệu khi truyền qua mạng (nghĩa là xác thực, quyền riêng tư và tính toàn vẹn). Trong dự án này, hai khối đang giao tiếp là PC và vi điều khiển. PC gửi dữ liệu tới vi điều khiển bằng giao thức điểm-điểm qua một liên kết nối tiếp. Sau đó, vi điều khiển xử lý datagram, kiểm tra tính hợp lệ của nó và trích xuất dữ liệu. Khi xử lý IPSec, dữ liệu đã được mã hóa nên trước tiên cần phải giải mã dữ liệu để có được văn bản gốc, để tăng tốc cho quá trình giải mã, một bộ xử lý song song tiền điện tử đã được xem xét. Để quản lý dự án, một số kỹ năng là cần thiết, từ kết nối mạng đến lập trình vi mô và thiết kế phần cứng. Nói chung IP được liên kết với TCP và còn được gọi là TCP/IP. Trong dự án này để quản lý sự phức tạp của hệ thống, lớp TCP không được xem xét và dữ liệu là được cung cấp trực tiếp sau lớp IP như trong Hình 1. Do đó, từ phía PC, dữ liệu được mã hóa bằng thuật toán RC6 trước khi được gói gọn trong một datagram. Để có được datagram cuối cùng, hai lớp đã được xem xét liên tiếp là các lớp IP và PPP. Lớp vật lý phân chia datagram để đáp ứng các yêu cầu liên kết nối tiếp. Từ phía PIC, các bước tương tự đã được xem xét nhưng theo thứ tự ngược lại. Khi dữ liệu được trích xuất từ datagram, nó được gửi đến bộ xử lý song song tiền điện tử để lấy dữ liệu đơn giản. Bộ đồng xử lý tiền điện tử đã được triển khai trong một APEX FPGA và được kết nối với bus PIC. Dự án có sự tham gia của bảy sinh viên năm thứ hai từ khoa ECE của Đại học Massachusetts, Amherst. Họ đã phải chuyển từ Verilog sang VHDL cho dự án này. Các cuộc họp hàng tuần đã được tổ chức để thảo luận về những thành tựu và những khó khăn của dự án (dự án đã tiến hành trong tám tuần với báo cáo cuối cùng và demo vào tuần cuối). Mục tiêu của dự án là cho phép sinh viên tập hợp trong cùng một nghiên cứu nhiều kỹ năng. Từ phía ứng dụng đã có những cân nhắc về bảo mật và mạng, từ phía kiến trúc đã có mã CTNH / SW vì thiết kế được phân chia giữa PC, vi điều khiển và FPGA. Từ quan điểm lập trình, các sinh viên phải tiếp cận với các ngôn ngữ C, ASM và VHDL. Và cuối cùng từ phía tạo mẫu, họ phải mở rộng một bảng tạo mẫu để thực hiện toàn bộ hệ thống (tham khảo Hình 2 cho trình diễn cuối cùng).
+II. PHÁC THẢO DỰ ÁN
+Trong dự án này như đã đề cập trước đây, một số khía cạnh đã được xem xét, khía cạnh đầu tiên liên quan đến định nghĩa datagram đòi hỏi sự hiểu biết chung về các lớp IP (và IPSec) và PPP. Dữ liệu gốc được mã hóa và thu thập với tiêu đề AH và tiêu đề IP. Mỗi tiêu đề này chứa thông tin cụ thể để cung cấp một datagram hợp lệ. Trong dự án, các sinh viên đã xác định đúng các tham số tương ứng với các nghiên cứu trong từng trường hợp. Sau đó, kết quả được gói gọn trong lớp PPP để cung cấp datagram cuối cùng. Đối với IP, PPP chứa các tham số cụ thể đã được xác định. Để giảm độ phức tạp của toàn bộ hệ thống, một phiên bản đơn giản của các lớp IP và PPP đã được xem xét (các giao thức tương ứng có thể rất phức tạp). Ví dụ, bước SA không được xem xét và khóa được xác định trước và thuật toán cho giải pháp mã hóa đã được chọn. Hơn nữa, trong bước đầu tiên, thuật toán xác thực đã không được xử lý. Chỉ có phần mật mã được nhắm mục tiêu. Rõ ràng, sự phức tạp của hệ thống có thể đã phát triển tùy thuộc vào kết quả thu được trong dự án. Bước đầu tiên, kế hoạch là viết thủ công vào tệp văn bản datagram tương ứng với dữ liệu được gửi. Sau đó, cần phải viết một chương trình (sử dụng ngôn ngữ C) đã lấy tệp này và chuyển nó qua giao diện nối tiếp đến vi điều khiển PIC (Microchip PIC 16F877 / 874). Bộ vi điều khiển đã nhận được datagram, kiểm tra tính hợp lệ của nó và lưu trữ dữ liệu trong bộ nhớ của nó. Để cung cấp chức năng này, cần phải cấu hình giao diện nối tiếp của PIC để có thể nhận được datagram. Sau đó, các tham số khác nhau từ các tiêu đề đã được kiểm tra để xác minh tính hợp lệ của thông tin liên lạc (ví dụ: là địa chỉ nguồn IP và đích chính xác). Khi bước đó được thực hiện, cần phải gửi dữ liệu đến bộ đồng xử lý tiền điện tử để xác định dữ liệu gốc (được triển khai trên Altera APEX 20KEP20K200 trong Bộ công cụ phát triển Nios). Tất cả các tác vụ được thực hiện trên vi điều khiển đều yêu cầu một chương trình ASM viết tay khá lớn, do đó cần có kế hoạch kiểm tra nghiêm ngặt để gỡ lỗi nhằm quản lý độ phức tạp của mã. Cuối cùng, cần phải hiểu thuật toán mật mã RC6 để có thể xây dựng thiết kế phần cứng tương ứng. Với mục đích đó, mã VHDL đã được xác định. Để giúp việc thực hiện bộ giải mã RC6, một thiết kế hiện có đã được xem xét và điều chỉnh cho nghiên cứu trường hợp được xem xét. Sau khi dữ liệu được giải mã, cần phải gửi lại cho vi điều khiển để nó được hiển thị trên thiết bị đầu cuối. Hình 3 minh họa hệ thống đã được xây dựng và Hình 2 cung cấp việc thực hiện cuối cùng.
+
+
+III. CÁC BƯỚC CỦA DỰ ÁN
+Khi xử lý một dự án như vậy, điều quan trọng là phải xác định rõ các bước khác nhau cần đạt được để quản lý một hệ thống phức tạp và thường xuyên báo cáo tiến trình liên quan đến tình trạng của dự án. Các phân tách sau đây được các sinh viên xem xét để xây dựng hệ thống (nhưng các giải pháp khác là có thể xem xét nếu nó mang tính hợp lí hơn).
+A.Task 1: Giao tiếp PC-PIC (được thực hiện bởi một sinh viên)
+
+Trong phần này của dự án, nhiệm vụ chính là viết mã C cho phép truyền nối tiếp một tệp (datagram), tới PIC và sau đó viết mã lắp ráp sẽ truyền trong serial và lưu nó vào bộ nhớ PIC . Mã C là mã đầu tiên được xử lý vì nhiều lý do; lý do chính là suy nghĩ rằng nếu không có bất kỳ dữ liệu nào được gửi, sẽ không có cách nào để kiểm tra mã PIC để lưu trữ dữ liệu vào bộ nhớ. 
+Các lý do khác để mã C được thực hiện trước tiên là vì nó đơn giản, không yêu cầu bất kỳ phần cứng nào ngoài PC và do đó có thể được thực hiện bên ngoài phòng thí nghiệm và nó có thể được thực hiện mà ít hciu5 ảnh hưởng với bất kỳ phần nào khác trong phòng thí nghiệm. 
+Việc truyền dữ liệu nối tiếp được thực hiện bằng cách sử dụng thư viện windows.h, cho phép các cổng com được chọn và sử dụng để gửi hoặc nhận dữ liệu với tốc độ baud được chỉ định. Khi cổng com đã được chọn và thiết lập, phần còn lại của mã chỉ đơn giản là vấn đề mở và chuẩn bị tệp datagram được gửi qua nó một cách an toàn đến PIC. Việc lắp ráp sau đó được viết để lưu trữ dữ liệu được gửi bởi mã C. RCIF của thanh ghi Pir1 đã được thăm dò để kiểm tra dữ liệu được nhận. Khi byte đầu tiên được phát hiện, nó sẽ được lưu vào bộ nhớ PIC bằng cách sử dụng địa chỉ gián tiếp và RCIF sẽ được hỏi lại để kiểm tra byte tiếp theo để lặp lại quá trình. Việc lắp ráp này sau đó đã được tích hợp với mã khác cho PIC.
+
+B. Nhiệm vụ 2: Định nghĩa datagram (nó được thực hiện bởi một sinh viên)
+Trong ngăn xếp mạng chung, dữ liệu được gói gọn bên trong khung bằng cách nối thêm các trường vào đầu và cuối dữ liệu. Datagram biểu thị kết quả cuối cùng của dữ liệu được gói gọn theo quy trình sau: 
+1. Dữ liệu gốc được gói trong gói IPv6 
+2. Gói IPv6 này được mã hóa, chỉ mã hóa phần dữ liệu của gói và xác thực tương ứng các tiêu đề được chèn trong gói. 
+3. Gói IPv6 được mã hóa này sau đó được gói gọn trong khung PPP, bao gồm dữ liệu được nối vào cả đầu và cuối khung. 
+Cấu trúc hoàn chỉnh này là datagram cuối cùng. Cấu trúc này yêu cầu một số trường cho mỗi bước từ danh sách trên. Bước đầu tiên trong việc tạo datagram này là xác định từng giá trị cho các tiêu đề giao thức. Sau khi xác định từng giá trị không đổi và tính toán các giá trị động, một chương trình C đã được xác định để xây dựng datagram. Chương trình C ban đầu được dự định để xây dựng một datagram tĩnh duy nhất trong bộ nhớ, sau đó lưu datagram đó dưới dạng tệp. Bắt đầu theo cách này đã cung cấp một đường dẫn nâng cấp dễ dàng cho việc sửa đổi theo kế hoạch thành mã để tạo ra một datagram động dựa trên đầu vào của người dùng hoặc một tệp đầu vào. Sau khi viết mã C ban đầu để giữ dữ liệu cần thiết, các chức năng cần thiết cho các trường động đã được nghiên cứu. Cụ thể, thuật toán mã hóa RC6 và chức năng kiểm tra CRC đã được định vị và chèn vào mã.
+
+Nhiệm vụ 3: Xác thực dữ liệu và trích xuất dữ liệu (được thực hiện bởi hai sinh viên)
+Sau quá trình lưu trữ datagram trong bộ nhớ PIC, PIC yêu cầu kiểm tra tính hợp lệ của các tham số nhất định trong datagram, quan trọng nhất là 
+•	Payload.
+•	Địa chỉ đích.
+•	Các phần dữ liệu.
+Các tham số này được kiểm tra để xác minh tính hợp lệ của giao tiếp. Sau khi trích xuất và kiểm tra từng tham số, bước tiếp theo là gửi phần dữ liệu được mã hóa của datagram tới bộ xử lý tiền điện tử. Bộ xử lý mật mã thực hiện giải mã và gửi dữ liệu gốc (dữ liệu trước khi mã hóa) trở lại vi điều khiển để được lưu trữ lại trong bộ nhớ PIC. Dữ liệu mã hóa sẽ bị ghi đè bởi dữ liệu giải mã trong cùng phạm vi bộ nhớ. Sau khi dữ liệu được nhận từ bộ xử lý tiền điện tử. nó được hiển thị trên một thiết bị đầu cuối như trong Hình 4.
+
+Nhiệm vụ 4: Bộ xử lý song song tiền điện tử (nó được thực hiện bởi hai sinh viên)
+Bước đầu tiên trong thiết kế bộ xử lý song song FPGA là xác định giao thức bus giữa PIC và FPGA. Giao thức là tính đến các thuộc tính không đồng bộ của hai thiết bị. Để thực hiện một giao thức như vậy, một phương pháp bắt tay đã được sử dụng. Khi xác định được giao thức BUS, một FSM cấp cao (Máy trạng thái hữu hạn) đã được thiết kế. FSM sau đó được chia thành các mô-đun riêng biệt: 
+•	Đầu vào dữ liệu: Chuyển đổi giao thức giữa PIC và bộ giải mã.
+•	Bộ giải mã: Giải mã dữ liệu.
+•	Đầu ra dữ liệu: Chuyển đổi giao thức giao tiếp giữa bộ giải mã và IP đầu cuối.
+Khối đầu của FPGA bao gồm đầu vào (Hình 5). Mô-đun này được thiết kế để nhận một loạt 16 bit song song cùng một lúc và để xuất 4 x 32 bit cho bộ giải mã. Mỗi bộ 32 bit đầu ra cho bộ giải mã bao gồm 2 x mỗi 16 bits đầu vào ban đầu, do đó, chuỗi đầu vào cần bốn bộ đệm, mỗi bộ có khả năng chứa 32 bit.
+Phần giữa của FPGA là một bộ giải mã nhầm giải mã các khối bản mã 128 bit thành các khối 128 bit dữ liệu ban đầu bằng thuật toán RC6. Giao thức giữa các mô-đun đầu vào/đầu ra và bộ giải mã phải được thiết lập. 
+Phần cuối của FPGA bao gồm đầu ra. Mục tiêu của đầu ra là thực hiện đảo ngược mô-đun đầu vào. Đầu ra đã lấy và lưu trữ 4 x 32 bit cùng một lúc. Mỗi 32 bits được lưu trữ vào một thanh ghi 32 bits. Mười sáu bit song song sau đó được gửi đến PIC mỗi khi PIC yêu cầu dữ liệu.
+
+E. Nhiệm vụ 5: Toàn bộ hệ thống (được thực hiện bởi người quản lý dự án + sáu sinh viên trước đó).
+Sau khi một trong bốn nhiệm vụ chính được thử nghiệm riêng lẻ và đã thành công, nhóm đã nhận nhiệm vụ tích hợp các bộ phận của hệ thống vào tổng thể. Điều này liên quan đến một giai đoạn gỡ lỗi. Nhiều lỗi đã gặp phải và đã được xử lý. Đầu tiên, các sinh viên phải tích hợp các đoạn mã lắp ráp riêng biệt vì ba người khác nhau đã viết các phần của nó. Điều cần thiết là tất cả các phần phải thống nhất và làm việc cùng nhau như thể chúng là một đoạn mã đồng nhất. Điều này liên quan đến việc sắp xếp các tên biến, thêm mã để nối hai phần, loại bỏ các phần không cần thiết hoặc trùng lặp và đảm bảo thông tin liên lạc bus khớp với cả hai bên. Việc tích hợp các nhiệm vụ riêng lẻ vào một dự án đòi hỏi sinh viên thiết lập thời gian họp để cả nhóm có thể gặp hoặc chỉ một số người có liên quan đến những vấn đề hiện tại, phân chia lao động giữa các thành viên trong nhóm, ưu tiên các vấn đề, quản lý tài nguyên và giải quyết vấn đề như một đội. Kết quả của việc đáp ứng và thực hiện hiệu quả các nhiệm vụ được mô tả ở trên, các sinh viên có thể tạo ra một dự án làm việc đáp ứng tất cả các mục tiêu của dự án (Hình 6 cung cấp chi tiết về việc thực hiện cuối cùng).
+
+
+IV. PHẢN HỒI CỦA DỰ ÁN
+Dự án được mô tả là rất thành công. Sinh viên đánh giá cao dự án vì kiến thức kỹ thuật, tổ chức và quản lý. Họ rất thích phạm vi rộng lớn của các kỹ năng cần thiết. Một số ý kiến là: "đó là thời gian tốt để làm việc trong một nhóm lớn", "dự án đã cho tôi kỹ năng tổ chức và kỹ năng giao tiếp", "Tôi rất ấn tượng với kết quả của dự án", "dự án rất tốt – đòi hỏi nhiều kĩ năng, nó chứa mã C, mã VHDL và mã lắp ráp PIC ".
+
+V. KẾT LUẬN
+Bài viết này trình bày một dự án được thực hiện trong Đại học Massachusetts, Amherst, Hoa Kỳ liên quan đến một thiết kế IPSec thông qua một cách tiếp cận liên ngành. Học sinh có cơ hội sử dụng các kỹ năng từ một số khóa học trong một dự án duy nhất và làm việc trong một nhóm lớn. Họ đã phải xử lý mạng, thiết kế dựa trên bộ xử lý và kiến trúc có thể cấu hình lại, cung cấp một cái nhìn tổng quan tốt về thiết kế cấp hệ thống. Bảy sinh viên đã làm việc trong dự án (tốt cho trải nghiệm đầu tiên) nhưng có thể tăng số lượng sinh viên vì một số phần như xác thực hoặc quản lý key không được xem xét. Một phần mở rộng thú vị khác của dự án có thể là tự động điều chỉnh các thuật toán mã hóa để tận dụng lợi ích của tái cấu hình động.
+
+NHÌN NHẬN.
+Các tác giả xin cảm ơn Giáo sư Tilman Wolf và Hieng Shea, Jared Eldridge, Ben Lapointe, Matt Brennan, Brian Roberts, Dan Verdolino đã tham gia vào dự án của khóa ECE 354 thuộc khoa ECE của Đại học Massachusetts, Amherst.
+
+
+Car maker: Nhà sản xuất ô tô
+Autopilot: Lái tự động
+Nissan’s line-ups: Các dòng sản phâm của Nissan
+Legacy: Di sản
+automatic emergency braking systems: Hệ thống phanh khẩn cấp
+Automated driving technology: Công nghệ lái tự động
+50 percent of road traffic collisions: 50% vac hạm giao thông đường bộ.
+SoC: system on chip
+IoT: internet of thing.
+its robust object recognition: Nhận dạng đối tượng 1 cách mạnh mẽ.
+AI: artificial intelligence : Trí tuệ nhân tạo.
+road-sign recognition: Nhận dạng biển báo
+Driver assistance:  Hỗ trợ tự lái
+Mobility solution: giải pháp linh hoạt
+a company-internal innovation contest: Một cuộc thi đổi mới nội bộ công ty
+be partially concealed:  bị che giấu một phần
+ 
