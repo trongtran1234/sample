@@ -1,0 +1,49 @@
+Author: BUS/ACRT/TrongTran
+Date: 2019/09/04
+
+Cách điều khiển việc bật/tắt power trong việc truyền dữ liệu giữa master và slave.
+
+Trong bài này chúng ta sẽ tìm hiểu cách điều khiển power cho slave và master trong việc truyền dữ liệu.
+Vấn đề đặt ra. 
+Thường trong 1 chip chúng ta sẽ cần phải tắt power một số vùng nếu như function vùng này không được sử dụng liên tục nhầm tiết kiệm năng lượng tiêu thụ cho chip. Công nghệ ngày càng phát triển thì việc thiết kế chip có năng lượng tiêu thụ thấp là một lợi thế và giúp dễ dàng cạnh tranh trên thị trường.
+Tuy nhiên không phải vùng nào cũng có tính năng bật/tắt power vì có những vùng phải hoạt động liên tục.
+Trong bài này ta có một số quy ước như sau:
+•	Vùng power luôn luôn bật: gọi là vùng an toàn.
+•	Vùng power có thể bật hoặc tắt: gọi là vùng không an toàn.
+Điều này đưa ta đến một số vấn đề trong thiết kế chip cũng như verification như sau:
+1.	Dữ liệu được gửi từ vùng an toàn đến vùng không an toàn.
+Trường hợp 1: Cả hai vùng đều on
+Sẽ không có vấn đề gì.
+Trường hợp 2: Vùng an toàn bật power còn vùng không an toàn tắt power
+Có 2 vấn đề được đặt ra. 
+Nếu power tắt khi data từ vùng không an toàn chưa trả về hết điều này sẽ dẫn đến việc chip bị treo vì phía master (ở vùng an toàn) sẽ luôn đợi tín hiệu response từ vùng không an toàn trả về tuy nhiên trong trường hợp này vùng không an toàn đã bị tắt power nên không thể trả về được.
+Nếu power được tắt khi data từ vùng không an toàn đã trả về hết và vùng an toàn tiếp tục gửi thêm request đến vùng đã bị tắt power . Điều này không sao vì vùng power tắt sẽ nhận tín hiệu nhưng không transfer đến những module phía sau.
+2.	Dữ liệu được gửi từ vùng không an toàn đến vùng an toàn.
+Trường hợp 1: Cả hai vùng đều bật power
+Sẽ không có vấn đề gì.
+Trường hợp 2: Vùng an toàn bật power còn vùng không an toàn tắt power.
+Điều này sẽ không ảnh hưởng đến quá trình thiết kế và mô phỏng.
+
+Như vậy điều mà chúng ta cần quan tâm nhất đó chính là dữ liệu được gửi từ vùng an toàn đến vùng không an toàn. Ta phải điều khiển việc bật/tắt power cho vùng không an toàn sao cho data được trả về cho master đầy đủ sao đó mới được tắt power.
+
+3.	Giải pháp.
+Trong hầu hết các thiết kế ngày nay người ta sẽ sử dụng cặp tín hiệu gọi là isreq và isack để điều khiển việc bật/tắt power cho master và slave.
+Nói nôm na như sau:
+Isreq: Bộ control sẽ gửi tín hiệu cho phía master và slave rằng nó sẽ tắt power cho master/slave. Điều này giống như một câu hỏi rằng liệu master/slave có sẵn sàng cho việc tắt power chưa. 
+Isack: Phía master và slave sau khi nhận được tín hiệu isreq bộ control sẽ phải thông báo tình hình hiện tại cho bộ control. Ví dụ tại thời điểm nhận tín hiệu slave vẫn chưa trả về master tín hiệu response. Slave sẽ từ chối tiếp tục nhận tín hiệu từ  master bằng cách bật tín hiệu ready bằng 0 và đợi đến khi response trả về đầy đủ cho master. Sau đó slave sẽ gửi thông báo về cho bộ điều khiển rằng nó đã sẵn sàng để tắt power (Bằng cách thay đổi giá trị tín hiệu isack).
+
+4.	Nguyên lí hoạt động của isreq/isack.
+
+Trường hợp 1: slave không hỗ trợ trả về thông báo cho master khi nó đã bị tắt power.
+Khi isreq = 0, tín hiệu request được chấp nhận khi số lượng buffer chứa request chưa đầy.
+Khi isreq = 1, tín hiệu request không được chấp nhận. Và khi số buffer không chứa bất kì data nào, isack trở thành 1. Vài chu kỳ sau khi isreq trở thành 0, isack trở thành 0.
+Trường hợp 2: Slave hỗ trợ trả về tín hiệu nhằm thông báo cho master biết nó đang tắt power.
+Khi isreq = 0, request được chấp nhận khi số buffer chưa đầy.
+Khi isreq = 1 và isack = 0, request không được chấp nhận. Và khi data chứa trong các bộ buffer trở thành 0 (Nghĩa là đã transfer toàn bộ dữ liệu), isack trở thành 1.
+Trong khi isack = 1 hoặc tín hiệu phản hồi lỗi trả về master, SEL_ERR trở thành 1.
+Khi SEL_ERR = 1 và yêu cầu đến, request được chấp nhận nhưng không được truyền sang phía lave tiếp theo và phản hồi lỗi (xRESP = 2'b10 (SLVERR)) được trả về.
+Một số chu kỳ sau isreq trở thành 0, isack trở thành 0.
+Khi isack trở thành 0 và tất cả các phản hồi lỗi được chấp nhận, SEL_ERR trở thành 0.
+
+
+
