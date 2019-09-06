@@ -1,0 +1,67 @@
+Tím hiểu kiến thức cơ bản về IPsec (IP security) 
+
+Ngày nay, Với sự tiến bộ của khoa học kĩ thuật, con người có thể sử dụng internet mọi lúc mọi nơi từ các chiếc smart phone, smart clock, laptop ..v..v. Cũng từ sự phát triển đó cụm từ IoT (internet of thing) được sử dụng rộng rãi trong lĩnh vực vi mạch và công nghệ thông tin.
+Đi đôi với sự phát triển của khoa học kĩ thuật là sự phát triển của giới hacker công nghệ. Việc trao đổi thông tin điện tử ngày càng nhiều đòi hỏi việc bảo mật thông tin ngày càng cao. Trên thế giới đã có rất nhiều chuyên gia về bảo mật trở nên nổi tiếng.
+Trong bài viết hôm nay mình sẽ trao đổi với các bạn những vấn đề cơ bản liên quan đến thiết kế IPsec (IP security). Những bài tiếp theo chúng ta sẽ đi vào chi tiết hơn. Trong bài này, mình chỉ trình bài một cách tổng quát nhằm giúp mọi người có cái nhìn ban đầu về nó.
+
+Mục đích của IPsec là gì ?
+Đó là nhầm tránh việc thông tin bị đánh cắp trong quá trình truyền tải hay nói đúng hơn là mặc dù thông tin có bị đánh cắp đi chăng nữa thì người đánh cắp cũng không hiểu được những gì bạn đang muốn truyền tải đến nơi nhận. Đơn giản vì chúng đã bị mã hoá thành những mã code không mang bất kì ý nghĩa nào.
+
+Vậy IPsec hoạt động như thế nào ?
+
+Đầu tiên dữ liệu được mã hoá tại nơi gửi (có thể bằng phần mềm hoặc phần cứng). Sau đó, dữ liệu sẽ trở thành 1 đoạn mã không mang ý nghĩa và được gửi tới slave (nơi nhận) thông qua các cổng giao tiếp. Tại đây slave sẽ nhận dữ liệu và lưu vào bộ nhớ. PC sẽ gửi dữ liệu được lưu trong bộ nhớ tới mạch giải mã. Tại đây dữ liệu sẽ được giải mã  và lưu đè vào vùng địa chỉ của đoạn mã được lưu trước đó. Như vậy quá trình giải mã hoàn tất.
+
+Yêu cầu của một thuật toán mã hoá là gì ?
+
+Có 4 yêu cầu chính của thuật toán mã hoá đó là:
+
++ Dữ liệu thay đổi ít nhưng đoạn mã output thay đổi nhiều.
+Mình lấy ví dụ:
+Data_in = 00000000000000000000000000000000, Cipher = 4d6532ddd043db3c18032cbc94c010e7
+Data_in = 00000000000000000000000000000001, Cipher = 12665e211902afb12eb792fd0b2e3f4c
+Data_in = 00000000000000000000000000000002, Cipher = f511b61fe2883cef49847bbbd449c22c
+Ví dụ trên mình đang sử dụng thuật toán ASE dữ liệu ngõ vào là 128 bit,  Key là 128 bit và dữ liệu sau mã hoá là 128 bits. Nếu nhìn vào bạn dễ dàng nhận ra là ở dữ liệu ngõ vào, mình chỉ đổi 1 bit tại vị trí số 0 từ 0 sang 1 nhưng đoạn mã ngõ ra đã khác rất nhiều.
++ Dữ liệu vào khác nhau thì các mã ngõ ra cũng phải khác nhau. Rất dễ thấy rằng nếu dữ liệu vào khác nhau nhưng mã ra giống nhau (Cùng key, hoặc key khác nhau nhưng có quy luật) thì chúng ta không thể giải mã được. 
++ Không nên có mối liên hệ với nhau giữa các mã output.
+ Chẵng hạn bạn có ví dụ sau:
+Data_in = 00000000000000000000000000000000, Cipher = 4d6532ddd043db3c18032cbc94c010e7
+Data_in = 00000000000000000000000000000001, Cipher = 4d6532ddd043db3c18032cbc94c010e8
+Data_in = 00000000000000000000000000000002, Cipher = 4d6532ddd043db3c18032cbc94c010e9
+
+Nếu dữ liệu vào tăng 1 đơn vị thì dữ liệu ra cũng tuyến tính tăng 1 đơn vị theo. Điều này là không được phép vì những hacker sẽ dễ dàng phán đoán ra thuật toán của bạn và giải mã chúng một cách dễ dàng.
+
++ Các đoạn mã hoá phải có phương pháp để giải mã.
+Và tất nhiên là nếu bạn mã hoá một đoạn mã nào đó thì bạn phải có cách để giãi mã chúng nếu bạn không giải mã được đồng nghĩa với việc nó không mang lại bất kì giá trị nào cho các ứng dụng thực tiễn.
+Tạo ra một đoạn mã không khó nhưng khó 73 chỗ bạn phải cân nhắc xem người khác có dễ dàng giải mã của bạn hay không. Bên cạnh đó bạn có giải mã đúng không.
+
+Đễ mã hoá bạn cần những gì ?
+Đầu tiên đó là dữ liệu ngõ vào của bạn. Bạn phải xác định được ngõ vào của bạn có độ dài bao nhiệu bit. Vì có 1 số thuật toán chỉ hộ trợ các độ dài bit nhất định. Nên nếu bạn có dữ liệu vào khác với độ dài dữ liệu ban đầu bạn phải chuyển đổi nó về độ dài dữ liệu phù hợp.
+Thứ hai là một đoạn mã gọi là key. Với đoạn mã này bạn không nên tiết lộ ra bên ngoài vì đó là chìa khoá để bạn giải mã.
+Thông thường mã key này được dùng cho quá trình mã hoá cũng như giải mã.
+Tuy nhiên một số trường hợp, Mã key này sẽ khác cho quá trình mã hoá và giải mã. Tuỳ vào thuật toán bạn dùng cho mã hoá hay giãi mã.
+
+ Như vậy tóm lại bạn cần:
++ Dữ liệu ngõ vào.
++ Một mã key.
+
+Công cụ.
+Trong một số trường hợp bên gửi sẽ mã hoá dữ liệu với phần mềm và bên nhận sẽ giải mã với phần cứng (có thể tiến hành trên FPCA). Điều này là hợp lí vì bên nhận cần xử lí nhanh quá trình nhận dữ liệu và trả về tín hiệu response. Trong khi bên gửi việc delay không ảnh hưởng nhiều đến hiệu suất của quá trình.
+
+Các bạn tìm hiểu các bài viết khác trong blog này nhé.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
