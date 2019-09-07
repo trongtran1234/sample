@@ -1,0 +1,26 @@
+`timescale 1ns / 1ps
+
+module AES_TOP(clk, data_in, key, cipher);
+
+   //Parameter
+   parameter KEY_WIDTH = 128;
+   parameter DATA_WIDTH = 128;
+   parameter CIPHER_WIDTH = 128;
+ 
+   //Input
+   input clk;
+   input [DATA_WIDTH-1:0] data_in;
+   input [KEY_WIDTH-1:0] key;
+
+   //Output
+   output[CIPHER_WIDTH-1:0] cipher;
+
+   //Wire
+   wire [CIPHER_WIDTH-1:0] cipher_tmp;
+
+   
+   aescipher #(KEY_WIDTH, DATA_WIDTH, CIPHER_WIDTH) aescipher_00 (.clk(clk),.datain(data_in),.key(key),.dataout(cipher_tmp));
+
+   assign cipher = cipher_tmp[CIPHER_WIDTH-1:0];
+
+endmodule
