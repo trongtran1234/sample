@@ -1,0 +1,67 @@
+`timescale 1ns / 1ps
+
+`include "aescipher.v"
+`include "KeyGeneration.v"
+`include "mixcolumn.v"
+`include "rounds.v"
+`include "rounndlast.v"
+`include "sbox.v"
+`include "shiftrow.v"
+`include "subbytes.v"
+`include "AES_TOP.v"
+
+module AES_TB;
+
+   //Parameter
+   parameter KEY_WIDTH = 128;
+   parameter DATA_WIDTH = 128;
+   parameter CIPHER_WIDTH = 128;
+
+   //Inputs
+   reg clk;
+   reg [KEY_WIDTH-1:0] key;
+   reg [DATA_WIDTH-1:0] data_in;
+
+   //Outputs
+   wire [CIPHER_WIDTH-1:0] cipher;
+       
+   //Instantiate
+   AES_TOP #(128,128,128) AES_TOP_00 (.clk(clk), .data_in(data_in), .key(key), .cipher(cipher));
+
+   //Creat clock
+   initial begin
+      clk = 0;
+      forever #10 clk = ~clk;
+   end
+ 
+   
+   //Monitor input/output
+   initial begin
+      $monitor("Time = %t, Data_in = %h, Key = %h, Cipher = %h", $time, data_in, key, cipher);
+   end
+
+ 
+   initial begin
+      // Initialize Inputs
+      #50;
+      data_in = 128'h0000_0000_0000_0000_0000_0000_0000_0000;
+      key = 128'hAD01_DFA0_1254_EFDD_1235_9987_9956_FFFF; 
+
+
+      #20;
+      data_in = 128'h0000_0000_0000_0000_0000_0000_0000_0001;
+      key = 128'hAD01_DFA0_1254_EFDD_1235_9987_9956_FFFF;
+
+
+      #20;
+      data_in = 128'h0000_0000_0000_0000_0000_0000_0000_0002;
+      key = 128'hAD01_DFA0_1254_EFDD_1235_9987_9956_FFFF;
+
+
+      #100;
+      $finish;
+        
+   end
+      
+endmodule
+
