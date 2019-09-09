@@ -1,0 +1,426 @@
+https://github.com/secworks/aes/blob/master/src/rtl/aes_core.v
+
+
+[Thiết kế IPsec][Thuật toán AES] Thiết kế s-box thuận và ngược bằng ngôn ngữ Verilog.
+[IPsec design][AES algorithm] Design s-box and inverse s-box with Verilog language.
+
+Đây là 1 phần trong chuổi bài thiết kế mạch mã hoá và giải mã bằng thuật toán AES với ngôn ngữ Verilog.
+Bạn cần tìm hiểu các bài khác để hiểu rõ hơn.
+
+
+1.	Tổng quan.
+Trong thuật toán mã hoá AES.  Thiết kế bảng s-box là 1 phần rất đơn giản nhưng cực kì quan trọng. Mình sẽ tập trung nói về giải thuật ASE 128 bits dữ liệu ngõ vào, 128 bits key , và 128 bits dữ liệu ngõ ra.
+Người lập trình phải làm việc với ma trận 16x16, nghĩa là 256 phần tử. Bài viết này chỉ đơn giản là giúp chúng ta làm quen với cách để lấy các phần tử trong 1 ma trận dựa vào chỉ số vị trí của nó.
+Chẳng hạn ta có ma trận 2x2 như bên dưới:
+[00 01
+02 03]
+Ta có giá trị 01 nằm tại vị trí 0x0 trong ma trận trên. Tương tự ta có:
+
+
+2.	Giải thuật.
+Giải thuật của chúng ta đơn giản là đưa vào chỉ số vị trí, kết quả trả ra là giá trị tại vị trí đó trong ma trận 16x16.
+Ta có bảng s-box thuận như bên dưới:
+
+0x ( Hoặc 1x, 2x, 3x, 4x, 5x, 6x, 7x, 8x, 9x, ax,…fx) : nghĩa là hàng thứ 0 cột thứ x.
+x0 ( Hoặc x1, x2, ….xf): Nghĩa là hàng thứ x cột thứ 0.
+Bảng s-box là cố định trong thuật toán AES vì vậy người thiết kế chỉ cần tiến hành xác định ngõ ra dựa vào ngõ vào. Dưới đây là yêu cầu của việc thiết kế:
+Bảng s-box là combinational logic vì vậy không cần chạy với clock và reset.
+Ngõ vào 8 bits.
+Ngõ ra 8 bits.
+
+Ta có 2 cách để code cho tiến trình này:
+Cách 1: Sử dụng cấu trúc always.
+module s_box (pos_in, val_out);
+parameter DATA_W = 8;
+input [DATA_W – 1:0] pos_in;
+output[DATA_W -1:0] val_out;
+reg [DATA_W-1:0] val_out;
+
+always @(*) begin
+case(pos_in)
+      8'h00: c=8'h63;
+           8'h01: c=8'h7c;
+           8'h02: c=8'h77;
+           8'h03: c=8'h7b;
+           8'h04: c=8'hf2;
+           8'h05: c=8'h6b;
+….
+endcase
+end
+endmodule
+
+Cách thứ hai là sử dụng mảng và câu lệnh assign.
+
+module s_box (pos_in, val_out);
+parameter DATA_W = 8;
+parameter NUM_ELEM = 256;
+
+input [DATA_W – 1:0] pos_in;
+output[DATA_W -1:0] val_out;
+
+wire [DATA_W-1:0] arr_value [0:NUM_ELEM-1];
+assign val_out = arr_value[pos_in];
+assign arr_value[8'h00] = 8'h63;
+assign arr_value[8'h01] = 8'h7c;
+assign arr_value[8'h02] = 8'h77;
+assign arr_value[8'h03] = 8'h7b;
+assign arr_value[8'h04] = 8'hf2;
+assign arr_value[8'h05] = 8'h6b;
+assign arr_value[8'h06] = 8'h6f;
+assign arr_value[8'h07] = 8'hc5;
+….
+
+endmodule
+
+Đối với bảng s-box ngược, Bạn chỉ cần code tương tự nhưng với ma trận như bên dưới.
+
+3.	Code Verilog.
+Dưới đây là full code cho bảng s-box thuận viết theo cách thứ nhất:
+//Define timescale
+`timescale 1ns / 1ps
+
+module sbox(pos_in,val_out);
+
+input  [7:0] pos_in;
+output [7:0] val_out;
+
+reg [7:0] val_out;
+
+
+   always @(*)
+    case (pos_in)
+           8'h00: val_out=8'h63;
+           8'h01: val_out=8'h7c;
+           8'h02: val_out=8'h77;
+           8'h03: val_out=8'h7b;
+           8'h04: val_out=8'hf2;
+           8'h05: val_out=8'h6b;
+           8'h06: val_out=8'h6f;
+           8'h07: val_out=8'hc5;
+           8'h08: val_out=8'h30;
+           8'h09: val_out=8'h01;
+           8'h0a: val_out=8'h67;
+           8'h0b: val_out=8'h2b;
+           8'h0c: val_out=8'hfe;
+           8'h0d: val_out=8'hd7;
+           8'h0e: val_out=8'hab;
+           8'h0f: val_out=8'h76;
+           8'h10: val_out=8'hca;
+           8'h11: val_out=8'h82;
+           8'h12: val_out=8'hc9;
+           8'h13: val_out=8'h7d;
+           8'h14: val_out=8'hfa;
+           8'h15: val_out=8'h59;
+           8'h16: val_out=8'h47;
+           8'h17: val_out=8'hf0;
+           8'h18: val_out=8'had;
+           8'h19: val_out=8'hd4;
+           8'h1a: val_out=8'ha2;
+           8'h1b: val_out=8'haf;
+           8'h1c: val_out=8'h9c;
+           8'h1d: val_out=8'ha4;
+           8'h1e: val_out=8'h72;
+           8'h1f: val_out=8'hc0;
+           8'h20: val_out=8'hb7;
+           8'h21: val_out=8'hfd;
+           8'h22: val_out=8'h93;
+           8'h23: val_out=8'h26;
+           8'h24: val_out=8'h36;
+           8'h25: val_out=8'h3f;
+           8'h26: val_out=8'hf7;
+           8'h27: val_out=8'hcc;
+           8'h28: val_out=8'h34;
+           8'h29: val_out=8'ha5;
+           8'h2a: val_out=8'he5;
+           8'h2b: val_out=8'hf1;
+           8'h2c: val_out=8'h71;
+           8'h2d: val_out=8'hd8;
+           8'h2e: val_out=8'h31;
+           8'h2f: val_out=8'h15;
+           8'h30: val_out=8'h04;
+           8'h31: val_out=8'hc7;
+           8'h32: val_out=8'h23;
+           8'h33: val_out=8'hc3;
+           8'h34: val_out=8'h18;
+           8'h35: val_out=8'h96;
+           8'h36: val_out=8'h05;
+           8'h37: val_out=8'h9a;
+           8'h38: val_out=8'h07;
+           8'h39: val_out=8'h12;
+           8'h3a: val_out=8'h80;
+           8'h3b: val_out=8'he2;
+           8'h3c: val_out=8'heb;
+           8'h3d: val_out=8'h27;
+           8'h3e: val_out=8'hb2;
+           8'h3f: val_out=8'h75;
+           8'h40: val_out=8'h09;
+           8'h41: val_out=8'h83;
+           8'h42: val_out=8'h2c;
+           8'h43: val_out=8'h1a;
+           8'h44: val_out=8'h1b;
+           8'h45: val_out=8'h6e;
+           8'h46: val_out=8'h5a;
+           8'h47: val_out=8'ha0;
+           8'h48: val_out=8'h52;
+           8'h49: val_out=8'h3b;
+           8'h4a: val_out=8'hd6;
+           8'h4b: val_out=8'hb3;
+           8'h4c: val_out=8'h29;
+           8'h4d: val_out=8'he3;
+           8'h4e: val_out=8'h2f;
+           8'h4f: val_out=8'h84;
+           8'h50: val_out=8'h53;
+           8'h51: val_out=8'hd1;
+           8'h52: val_out=8'h00;
+           8'h53: val_out=8'hed;
+           8'h54: val_out=8'h20;
+           8'h55: val_out=8'hfc;
+           8'h56: val_out=8'hb1;
+           8'h57: val_out=8'h5b;
+           8'h58: val_out=8'h6a;
+           8'h59: val_out=8'hcb;
+           8'h5a: val_out=8'hbe;
+           8'h5b: val_out=8'h39;
+           8'h5c: val_out=8'h4a;
+           8'h5d: val_out=8'h4c;
+           8'h5e: val_out=8'h58;
+           8'h5f: val_out=8'hcf;
+           8'h60: val_out=8'hd0;
+           8'h61: val_out=8'hef;
+           8'h62: val_out=8'haa;
+           8'h63: val_out=8'hfb;
+           8'h64: val_out=8'h43;
+           8'h65: val_out=8'h4d;
+           8'h66: val_out=8'h33;
+           8'h67: val_out=8'h85;
+           8'h68: val_out=8'h45;
+           8'h69: val_out=8'hf9;
+           8'h6a: val_out=8'h02;
+           8'h6b: val_out=8'h7f;
+           8'h6c: val_out=8'h50;
+           8'h6d: val_out=8'h3c;
+           8'h6e: val_out=8'h9f;
+           8'h6f: val_out=8'ha8;
+           8'h70: val_out=8'h51;
+           8'h71: val_out=8'ha3;
+           8'h72: val_out=8'h40;
+           8'h73: val_out=8'h8f;
+           8'h74: val_out=8'h92;
+           8'h75: val_out=8'h9d;
+           8'h76: val_out=8'h38;
+           8'h77: val_out=8'hf5;
+           8'h78: val_out=8'hbc;
+           8'h79: val_out=8'hb6;
+           8'h7a: val_out=8'hda;
+           8'h7b: val_out=8'h21;
+           8'h7c: val_out=8'h10;
+           8'h7d: val_out=8'hff;
+           8'h7e: val_out=8'hf3;
+           8'h7f: val_out=8'hd2;
+           8'h80: val_out=8'hcd;
+           8'h81: val_out=8'h0c;
+           8'h82: val_out=8'h13;
+           8'h83: val_out=8'hec;
+           8'h84: val_out=8'h5f;
+           8'h85: val_out=8'h97;
+           8'h86: val_out=8'h44;
+           8'h87: val_out=8'h17;
+           8'h88: val_out=8'hc4;
+           8'h89: val_out=8'ha7;
+           8'h8a: val_out=8'h7e;
+           8'h8b: val_out=8'h3d;
+           8'h8c: val_out=8'h64;
+           8'h8d: val_out=8'h5d;
+           8'h8e: val_out=8'h19;
+           8'h8f: val_out=8'h73;
+           8'h90: val_out=8'h60;
+           8'h91: val_out=8'h81;
+           8'h92: val_out=8'h4f;
+           8'h93: val_out=8'hdc;
+           8'h94: val_out=8'h22;
+           8'h95: val_out=8'h2a;
+           8'h96: val_out=8'h90;
+           8'h97: val_out=8'h88;
+           8'h98: val_out=8'h46;
+           8'h99: val_out=8'hee;
+           8'h9a: val_out=8'hb8;
+           8'h9b: val_out=8'h14;
+           8'h9c: val_out=8'hde;
+           8'h9d: val_out=8'h5e;
+           8'h9e: val_out=8'h0b;
+           8'h9f: val_out=8'hdb;
+           8'ha0: val_out=8'he0;
+           8'ha1: val_out=8'h32;
+           8'ha2: val_out=8'h3a;
+           8'ha3: val_out=8'h0a;
+           8'ha4: val_out=8'h49;
+           8'ha5: val_out=8'h06;
+           8'ha6: val_out=8'h24;
+           8'ha7: val_out=8'h5c;
+           8'ha8: val_out=8'hc2;
+           8'ha9: val_out=8'hd3;
+           8'haa: val_out=8'hac;
+           8'hab: val_out=8'h62;
+           8'hac: val_out=8'h91;
+           8'had: val_out=8'h95;
+           8'hae: val_out=8'he4;
+           8'haf: val_out=8'h79;
+           8'hb0: val_out=8'he7;
+           8'hb1: val_out=8'hc8;
+           8'hb2: val_out=8'h37;
+           8'hb3: val_out=8'h6d;
+           8'hb4: val_out=8'h8d;
+           8'hb5: val_out=8'hd5;
+           8'hb6: val_out=8'h4e;
+           8'hb7: val_out=8'ha9;
+           8'hb8: val_out=8'h6c;
+           8'hb9: val_out=8'h56;
+           8'hba: val_out=8'hf4;
+           8'hbb: val_out=8'hea;
+           8'hbc: val_out=8'h65;
+           8'hbd: val_out=8'h7a;
+           8'hbe: val_out=8'hae;
+           8'hbf: val_out=8'h08;
+           8'hc0: val_out=8'hba;
+           8'hc1: val_out=8'h78;
+           8'hc2: val_out=8'h25;
+           8'hc3: val_out=8'h2e;
+           8'hc4: val_out=8'h1c;
+           8'hc5: val_out=8'ha6;
+           8'hc6: val_out=8'hb4;
+           8'hc7: val_out=8'hc6;
+           8'hc8: val_out=8'he8;
+           8'hc9: val_out=8'hdd;
+           8'hca: val_out=8'h74;
+           8'hcb: val_out=8'h1f;
+           8'hcc: val_out=8'h4b;
+           8'hcd: val_out=8'hbd;
+           8'hce: val_out=8'h8b;
+           8'hcf: val_out=8'h8a;
+           8'hd0: val_out=8'h70;
+           8'hd1: val_out=8'h3e;
+           8'hd2: val_out=8'hb5;
+           8'hd3: val_out=8'h66;
+           8'hd4: val_out=8'h48;
+           8'hd5: val_out=8'h03;
+           8'hd6: val_out=8'hf6;
+           8'hd7: val_out=8'h0e;
+           8'hd8: val_out=8'h61;
+           8'hd9: val_out=8'h35;
+           8'hda: val_out=8'h57;
+           8'hdb: val_out=8'hb9;
+           8'hdc: val_out=8'h86;
+           8'hdd: val_out=8'hc1;
+           8'hde: val_out=8'h1d;
+           8'hdf: val_out=8'h9e;
+           8'he0: val_out=8'he1;
+           8'he1: val_out=8'hf8;
+           8'he2: val_out=8'h98;
+           8'he3: val_out=8'h11;
+           8'he4: val_out=8'h69;
+           8'he5: val_out=8'hd9;
+           8'he6: val_out=8'h8e;
+           8'he7: val_out=8'h94;
+           8'he8: val_out=8'h9b;
+           8'he9: val_out=8'h1e;
+           8'hea: val_out=8'h87;
+           8'heb: val_out=8'he9;
+           8'hec: val_out=8'hce;
+           8'hed: val_out=8'h55;
+           8'hee: val_out=8'h28;
+           8'hef: val_out=8'hdf;
+           8'hf0: val_out=8'h8c;
+           8'hf1: val_out=8'ha1;
+           8'hf2: val_out=8'h89;
+           8'hf3: val_out=8'h0d;
+           8'hf4: val_out=8'hbf;
+           8'hf5: val_out=8'he6;
+           8'hf6: val_out=8'h42;
+           8'hf7: val_out=8'h68;
+           8'hf8: val_out=8'h41;
+           8'hf9: val_out=8'h99;
+           8'hfa: val_out=8'h2d;
+           8'hfb: val_out=8'h0f;
+           8'hfc: val_out=8'hb0;
+           8'hfd: val_out=8'h54;
+           8'hfe: val_out=8'hbb;
+           8'hff: val_out=8'h16;
+        endcase
+
+endmodule
+
+This is part of a series of circuit design of encryption and decryption by AES algorithm with Verilog language.
+You need to read other articles in my blog to better understand.
+
+
+1. Overview.
+In AES encryption algorithm, Designing the s-box table is a very simple but extremely important part. I will focus on ASE algorithm 128 bits of input data, 128 key bits, and 128 bits of output data.
+Programmers must work with a 16x16 matrix, that is, 256 elements. This article simply helps us get acquainted with how to get elements in a matrix based on its position index.
+For example, we have a 2x2 matrix as below:
+[00 01
+02 03]
+We have the value 00 located at position 0x0 in the above matrix. Similarly we have:
+
+
+2. Algorithm
+Our algorithm simply takes the position index, the returned result is the value at that position in the 16x16 matrix.
+We have the s-box table as shown below:
+
+0x (Or 1x, 2x, 3x, 4x, 5x, 6x, 7x, 8x, 9x, ax, ... fx): means the row 0 of the column x.
+x0 (Or x1, x2, ... .xf): Means the row x of the column 0.
+The s-box is fixed in the AES algorithm, so the designer only needs to determine the output based on the input. Here are the requirements of the design:
+The s-box is combinational logic, so there's no need to run with clock and reset.
+8 bits input.
+8 bits output.
+
+We have 2 ways to code for this process:
+Method 1: Use “always“ structure.
+module s_box (pos_in, val_out);
+parameter DATA_W = 8;
+input [DATA_W - 1: 0] pos_in;
+output [DATA_W -1: 0] val_out;
+reg [DATA_W-1: 0] val_out;
+
+always @ (*) begin
+case (pos_in)
+      8'h00: c = 8'h63;
+           8'h01: c = 8'h7c;
+           8'h02: c = 8'h77;
+           8'h03: c = 8'h7b;
+           8'h04: c = 8'hf2;
+           8'h05: c = 8'h6b;
+...
+endcase
+end
+endmodule
+
+The second way is to use array and the “assign” statement.
+module s_box (pos_in, val_out);
+parameter DATA_W = 8;
+parameter NUM_ELEM = 256;
+
+input [DATA_W - 1: 0] pos_in;
+output [DATA_W -1: 0] val_out;
+
+wire [DATA_W-1: 0] arr_value [0: NUM_ELEM-1];
+assign val_out = arr_value [pos_in];
+assign arr_value [8'h00] = 8'h63;
+assign arr_value [8'h01] = 8'h7c;
+assign arr_value [8'h02] = 8'h77;
+assign arr_value [8'h03] = 8'h7b;
+assign arr_value [8'h04] = 8'hf2;
+assign arr_value [8'h05] = 8'h6b;
+assign arr_value [8'h06] = 8'h6f;
+assign arr_value [8'h07] = 8'hc5;
+...
+
+endmodule
+
+For the inverse s-box table, you only need the same code but with the matrix as below:
+
+3. Code Verilog.
+Here is the full code for the s-box table written in the first way:
+
+
+
+
