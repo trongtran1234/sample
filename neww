@@ -1,0 +1,299 @@
+[Design][Thiết kế CPU 32 bit] [Bài 1] Các khái niệm cơ bản trong thiết kế CPU RISC-V 32 bit
+Tác giả: TrongTran
+Ngày: 16/09/2019
+Tài liệu tham khảo: www-inst.eecs.berkeley.edu/~cs61c/fa18/img/riscvcard.pdf và tài liệu học tập từ trường đại học Bách Khoa TP.HCM (Bộ môn Điện-Điện tử).
+
+Đây là chuỗi bài hướng dẫn thiết kế 1 CPU RISC-V 32 bit.
+Mình nói 1 chút về xu hướng phát triển của RISC-V nhé. Xu hướng trước đây đó là CPU càng thực hiện được nhiều câu lệnh thì càng tốt. Nghĩa là các nhà thiết kế luôn hướng đến việc thiết kế sao cho CPU có thể thực hiện nhiều câu lệnh nhất có thể.
+Ví dụ: Kiến trúc VAX đã có thể hỗ trợ nhân đa thức.
+Tuy nhiên, Về sau người ta nhận thấy rằng để thiết kế một CPU có thể chạy nhiều câu lệnh làm cho area tăng đáng kể và năng lượng tiêu tốn cũng cao, thời gian xử lí dài. Từ đó một xu hướng mới xuất hiện đó là CPU thực hiện càng ít câu lệnh càng tốt nhưng phải đảm bảo đầy đủ chức năng của nó.
+Trong bài này, chúng ta sẽ tìm hiểu một số khái niệm cơ bản trước khi đi vào thiết kế CPU RISC-V 32 bit chi tiết.
+
+1.	Mã máy
+Máy tính không thể nào hiểu được các câu lệnh bậc cao mà bạn vẫn hay viết hằng ngày. Những câu lệnh đó mang các từ gợi nhớ và đa dạng (Tuỳ loại ngôn ngữ mà có các tập lệnh khác nhau). Nó giúp cho lập trình viên dễ dàng ghi nhớ, tránh sai sót và nhầm lẫn trong quá trình code.  Để chạy được các câu lệnh đó ta phải sử dụng 1 trình biên dịch để chuyển từ đoạn code viết bằng ngôn ngữ bậc cao sang mã máy. 
+Mã máy là đoạn mã chỉ bao gồm các bit 0 hoặc 1 mang các ý nghĩa nhất định tuỳ vào cách định nghĩa của CPU.
+Ví dụ :
+CPU 16 bit sẽ có mã của câu lệnh “add” khác với CPU 32 bit.
+Ưu điểm của ngôn ngữ bậc cao so với mã máy.
+Hãy tưởng tượng bạn chỉ code với mã máy và làm việc với các chỉ số 0/1 thì công việc sẽ trở nên khó khăn hơn, khó quan sát, dễ nhầm lẫn và tốn nhiều thời gian để học.
+Ngôn ngữ bậc cao giúp bạn dễ nhớ, học và làm việc nhanh hơn.
+
+Dưới đây là mô hình cấu trúc của ngôn ngữ
+
+Ngôn ngữ bậc cao
+temp = v[k];
+v[k] = v[k+1];
+v[k+1] = temp;
+
+Ngôn ngữ assembly
+lwx3, 0(x10);
+lwx4, 4(x10);
+swx4, 0(x10);
+swx3, 4(x10)
+
+Mã máy
+1000 1101 1110 0010 0000 0000 0000 0000
+1000 1110 0001 0000 0000 0000 0000 0100
+1010 1110 0001 0010 0000 0000 0000 0000
+1010 1101 1110 0010 0000 0000 0000 0100
+
+2.	Thanh ghi.
+Ta có thể nhìn nhận như sau:
+CPU 16 bit: Sẽ có 16 thanh ghi (Từ R0 -> R15).
+CPU 32 bit: Sẽ có 32 thanh ghi để xử lí (từ R0 -> R31).
+CPU 64 bit: Sẽ có 64 thanh ghi (Từ R0 -> R63).
+Trong đó sẽ có một vài thanh ghi mang các giá trị đặc biệt không đổi. Nghĩa là dù ta có WRITE bất kì giá trị nào vào đi nữa thì giá trị thanh ghi đó vẫn không thay đổi giá trị.
+Chẳng hạn, trong bài này, Mình thiết kế CPU 32 bit có thanh ghi R0 luôn mang giá trị 0.
+
+Ngoài ra, sẽ có các vùng thanh ghi thực hiện các nhiệm vụ đặc biệt chẳng hạn như vùng chứa các biến tạm trong tính toán, vùng chứa flag ..v…v.
+
+3.	Đơn vị
+Như các bạn đã biết có rất nhiều cách định nghĩa 1 word:
+1 word = 16 bit.
+1 word = 32 bit.
+1 word = 64 bit.
+….
+Trong bài này do chúng ta thiết kế CPU 32 bit nên mình sẽ quy định luôn
+1 word = 4 byte = 32 bit.
+1 half word = 2 byte = 16 bit.
+
+4.	Cách tính địa chỉ read/write.
+Trong memory mỗi một đơn vị địa chỉ sẽ chứa tối đa 8 bit data = 1 byte data.
+
+Nghĩa là nếu bạn muốn đọc dữ liệu 1 byte data từ memory và đọc 2 vùng data trên memory liên tục nhau thì bạn cộng địa chỉ lên 1 đơn vị.
+Địa chỉ 01: Data AA (AA: mã hex 8 bit data).
+Địa chỉ 02: Data BB (BB: mã hex 8 bit data).
+
+Trong trường hợp ta không READ/WRITE 1 lần 8 bit data mà READ/WRITE 1 lần 32 bit thì nên cộng địa chỉ với 4.
+
+5.	Big endian và little endian
+Big Endian
+Least Significant bit (Bit có trọng số thấp nhất trong chuỗi dữ liệu) luôn được lưu ở ô nhớ có địa chỉ lớn nhất còn Most Significant Bit (Bit có trọng số cao nhất trong chuỗi dữ liệu) được lưu ở ô nhớ có địa chỉ nhỏ nhất trong vùng lưu trữ của biến.
+Little Endian
+Ngược lại với các nền tảng sử dụng big endian, ở các nền tảng sử dụng little endian, LSB luôn được lưu ở ô nhớ có địa chỉ nhỏ nhất còn MSB được lưu ở ô nhớ có địa chỉ lớn nhất trong vùng lưu trữ của biến.
+
+Bài tiếp theo chúng ta sẽ tìm hiểu về tập lệnh assembly trong thiết kế CPU RISC-V 32 bit.
+
+
+
+
+[Design] [RISC-V 32 bit] [Lesson 1] Basic concepts to design a 32 bit RISC-V
+Author: TrongTran
+Date: September 16, 2019
+
+References:  www-inst.eecs.berkeley.edu/~cs61c/fa18/img/riscvcard.pdf and studying materials from Ho Chi Minh City University of Technology (Department of Electrical and Electronics Engineering).
+Hi guys, I am from VietNam. My english is not very well, So if can, Please help me correct wrong sentences. Thank you.
+BTW, I have another website, If you like, You can access it http://trongtranrvc.blogspot.com/
+
+
+This is the first post in the series of tutorials (design a 32 bit RISC-V).
+I will talk a little bit about the development trend of RISC-V. In previous, the trend was that the more instructions a CPU made, the better. This means that designers are always aiming to design so that the CPU can execute as many instructions as possible.
+For example: VAX architecture can already multiply polynomials.
+However, later it was realized that a CPU with many instructions made the area increase significantly and the power consumption was also high, the processing time was long. Since then a new trend has emerged that the CPU executes as few instructions as possible but must ensure its full functionality.
+In this article, we will learn some basic concepts before going into detailed 32-bit RISC-V design.
+
+
+1. Machine language.
+Computers can't understand the high-level language that you use every day. Those commands carry words that are reminiscent and varied (depending on the type of language, there are different scripts). It helps programmers easily memorize, avoid errors and mistakes in the process of code. To run these commands, you must use a compiler to convert code written in high-level languages to machine language.
+Machine language is a code segment consisting of only bits 0 or 1 with certain meanings depending on the definition of the CPU.
+For example: 
+A 16-bit CPU will have a code of the "add" instruction that is different from a 32-bit CPU.
+Advantages of higher-level languages over machine language.
+Imagine you just code with machine language and work with the number 0 or 1, the work will become more difficult, difficult to observe, easy to confuse and have to spend a lot of time to learn.
+High-level languages help you remember, learn and work faster.
+
+Below is an example of the above languages:
+
+High-level language
+temp = v [k];
+v [k] = v [k + 1];
+v [k + 1] = temp;
+
+Assembly language
+lwx3, 0 (x10);
+lwx4, 4 (x10);
+swx4, 0 (x10);
+swx3, 4 (x10)
+
+Machine language
+1000 1101 1110 0010 0000 0000 0000 0000
+1000 1110 0001 0000 0000 0000 0000 0100
+1010 1110 0001 0010 0000 0000 0000 0000
+1010 1101 1110 0010 0000 0000 0000 0100
+
+2. Register.
+We can see as follows:
+16 bit CPU: There are 16 registers (From R0 -> R15).
+32-bit CPU: There are 32 registers to process (from R0 -> R31).
+64 bit CPU: There are 64 registers (From R0 -> R63).
+There will be a few registers with special values unchanged. Meaning that no matter what WRITE comes in, the value of the register remains unchanged.
+For example in this post. I designed a 32-bit CPU with register R0 always equal 0.
+
+In addition, there will be register areas that perform special tasks, such as a container for temporary variables in the calculation, a flag container, etc.
+
+3. Unit
+As you know there are many ways to define a word:
+1 word = 16 bits.
+1 word = 32 bits.
+1 word = 64 bits.
+...
+In this article, because we will design the 32-bit CPU, I will specify as below:
+
+1 word = 4 bytes = 32 bits.
+1 half word = 2 bytes = 16 bits.
+
+4. How to calculate the read / write address.
+In memory, each one unit of address will contain a maximum of 8 data bits = 1 byte data.
+
+This means that if you want to read 1 byte data from memory and read 2 continuous data areas on memory, you have to add the address to 1 unit.
+Address 01: Data AA (AA: 8 bit data hex code).
+Address 02: Data BB (BB: hex code 8 bit data).
+
+In case we don't READ / WRITE 1 time 8 bits of data but READ / WRITE 1 times 32 bits, we should add the address with 4.
+
+5. Big endian and little endian
+Big Endian
+Least Significant bits are stored in the memory cell with the largest address, and the Most Significant Bit (the most significant bit in the data series) is stored in the memory cell with the address. smallest in the storage area of the variable.
+Little Endian
+In contrast to big endian platforms, LSBs are always stored in the memory cell with the smallest address, while MSB is stored in the memory cell with the largest address in the storage area of the variable. .
+
+In next article, we will learn about assembly language in 32-bit RISC-V design.
+
+
+
+[Design][Thiết kế CPU 32 bit] [Bài 2] Tìm hiểu về tập lệnh assembly trong thiết kế CPU 32 bit 
+
+Tác giả: TrongTran
+Ngày: 16/09/2019
+Tài liệu tham khảo: www-inst.eecs.berkeley.edu/~cs61c/fa18/img/riscvcard.pdf và tài liệu học tập từ trường đại học Bách Khoa TP.HCM (Bộ môn Điện-Điện tử).
+
+Đây là một bài nằm trong chuỗi bài hướng dẫn thiết kế 1 CPU RISC-V 32 bit.
+
+Câu lệnh “add”.
+add rd, rs1, rs2
+Với câu lệnh add bên trên CPU sẽ thực hiện 2 tác vụ đó là:
+Reg[rd] = Reg[rs1] + Reg[rs2]
+PC = PC + 4
+Ý nghĩa của câu lệnh này là lấy giá trị chứa trong thanh ghi rs1 cộng với giá trị chứa trong thanh ghi rs2 và gán giá trị đó vào thanh ghi rd. Sau đó giá trị của PC = PC + 4.
+Ví dụ:
+R5 = 1
+R6 = 2
+Ta có phép toán add r7, r5, r6
+Sau khi thực hiện phép toán r7 sẽ chứa giá trị 1 + 2 = 3.
+
+Vậy tại sao lại là PC = PC +4 mà không phải cộng 1 số nào khác. Đơn giản vì câu lệnh của ta sẽ có 32 bit (CPU 32 bit).
+Mà trong memory thì mỗi đơn vị PC chứa 8 bit.
+Chẳng hạn:
+Ta có file IMEM:
+PC:     0001_0011
+PC+1: 1000_1111
+PC+2: 0101_1010
+PC+3: 1111_0000
+PC+4: 1010_1010
+Vì câu lệnh của chúng ta có 32 bit nên ta cần ghép 4 dòng từ PC + 1 đến PC+4 để thành 1 câu lệnh 32 bit hoàn chỉnh. Sau khi thực hiện xong câu lệnh tại PC. Có phải câu lệnh tiếp theo chúng ta bắt đầu từ PC+4 không.
+Câu lệnh “sub”.
+sub rd, rs1, rs2
+Với câu lệnh add bên trên CPU sẽ thực hiện 2 tác vụ đó là:
+Reg[rd] = Reg[rs1] - Reg[rs2]
+PC = PC + 4
+Ý nghĩa của câu lệnh này là lấy giá trị chứa trong thanh ghi rs1 trừ cho giá trị chứa trong thanh ghi rs2 và gán kết quả vào thanh ghi rd. Sau đó tăng giá trị của PC = PC + 4 cho câu lệnh kế tiếp.
+Ngoài ra ta còn có 1 số câu lệnh khác tương tự như:
+And: and giá trị chứa trong hai thanh ghi và gán vào rd.
+Or: or giá trị chứa trong hai thanh ghi và gán vào rd.
+Xor: xor giá trị chứa trong hai thanh ghi và gán vào rd.
+sll: câu lệnh shift left 
+slt: Câu lệnh so sánh có dấu
+sltu: Câu lệnh so sánh không dấu
+srl: Câu lệnh shift right logical
+sra: Câu lệnh shift right algorithm
+Để làm rõ sự khác biệt giữa srl và sra mình lấy ví dụ như sau: 
+Mình có 1 số 8 bit A = 8’b11001010
+Khi dùng lệnh srl 2 đơn vị kết quả là 8’b00111010
+Khi dùng lệnh sra 2 đơn vị kết quả là 8’b11110010
+Như vậy bit dấu được mở rộng trong câu lệnh sra. Còn câu lệnh srl thì mặc định mở rộng bit 0.
+
+
+Câu lệnh “addi”.
+addi  rd,rs1,A
+Ý nghĩa của câu lệnh này là lấy giá trị chứa trong thanh ghi rs1 cộng với A (A là một số integer) và gán kết quả vào thanh ghi rd. Sau đó tăng giá trị của PC = PC + 4 cho câu lệnh kế tiếp.
+Câu lệnh “subi”.
+subi  rd,rs1,A
+Ý nghĩa của câu lệnh này là lấy giá trị chứa trong thanh ghi rs1 trừ cho A(A là một số integer)  và chứa giá trị kết quả trong thanh ghi rd. Sau đó tăng giá trị của PC = PC + 4 cho câu lệnh kế tiếp.
+Vì trong câu lệnh giá trị A chỉ là 12 bit data. Vì vậy trước khi thực hiện cộng hoặc trừ số nhị phân ta phải mở rộng bit. Mở rộng bit có 2 dạng là mở rộng un-signed và signed.
+
+Câu lệnh lw, lh, lb  (Load word, load halfword, load byte, load halfword unsigned và load byte un-signed).
+
+Ngoài ra chúng ta còn có 1 số câu lệnh khác như slli, slti, sltui, srli, srai…v..v.
+
+lw rd, A(rs1)
+Ý nghĩa của câu lệnh này là lấy giá trị chứa trong thanh ghi rs1 cộng với số A (Nếu là lệnh lw thì A nên là bội số của 4, nếu là lh thì A nên là bội số của 2 và lb thì A bất kì). Gọi kết quả là B = Reg{x2} + A. Ta tìm trong DMEM lấy giá trị tại địa chỉ B (Giá trị B chính là địa chỉ để ta truy vấn giá trị cần lấy) và gán vào thanh ghi rd.
+Sự khác biệt giữa lw và lh và lb.
+lw nghĩa là ta lấy 32 bit data (1 word) trong địa chỉ B và gán vào thanh ghi rd.
+Trong khi lb là ta lấy 8 bit data (1 byte) trong địa chỉ B và mở rộng bit dấu thành 32 bit và gán vào thanh ghi rd.
+Ở đây ta còn có lệnh lh nghĩa là load half word = 2 byte (Địa chỉ nên là bội số của 2).
+Ngoài ra, ta còn có 1 số câu lệnh khác đó là:
+lbu là “load unsigned byte” có nghĩa là ta mở rộng bit bằng cách thêm 0 vào 24 bit đầu MBS (không dấu) còn với LB thì ta mở rộng bit bằng bit dấu (Bit đầu tiên từ trái qua phải).
+lhu là “load unsigned halfword” tương tự như trên.
+
+Câu lệnh sw, sb, sh.
+sw rd, A(rs1)
+Ý nghĩa của câu lệnh này là lấy giá trị chứa trong thanh ghi rs1 cộng với số A (Nếu là lệnh sw thì A nên là bội số của 4, sh thì A nên là bội số của 2, nếu là sb thì A bất kì). Gọi kết quả là B = Reg{x2} + A. Ta lấy giá trị chứa trong thanh ghi rd và lưu vào địa chỉ B (Giá trị B chính là địa chỉ để ta truy vấn giá trị cần lấy). Câu lệnh này ngược lại với câu lệnh lw.
+
+Lệnh nhảy có điều kiện beq, bne, blt, bge, bltu, bgeu.
+
+beq rs1, rs2, A
+Câu lệnh này nhằm thay đổi câu lệnh được thực hiện tiếp theo bằng cách thay đổi giá trị của PC. Thông thường sau khi thực hiện 1 câu lệnh giá trị PC = PC + 4. Tuy nhiên, trong câu lệnh trên nếu giá trị trong thanh ghi rs1 bằng giá trị trong thanh ghi rs2 thì PC = PC + A (Không phải + 4 và giá trị của A nên là bội của 4 chẳng hạn 8, 16, 20 …v..v).
+Tương tự ta có câu lệnh: bne nghĩa là nhảy khi rs1 # rs2 (Không bằng).
+blt: nhảy khi rs1 < rs2 (nhỏ hơn).
+bge: Nhảy khi rs1 >= rs2.
+bltu: Tương tự như lệnh blt nhưng so sánh các số không dấu.
+bgeu: Tương tự như lệnh bge nhưng so sánh các số không dấu.
+
+Câu lệnh jal (Jump and load), jalr (Jump and load register)
+jal rd, A
+Câu lệnh này thực hiện 2 chức năng đó là 
+Gán giá trị PC+4 vào thanh ghi rd (Load)
+Gán giá trị PC = PC + A (Jump).
+Đây là câu lệnh nhảy không điều kiện.
+Như vậy câu lệnh tiếp theo ta thực hiện sẽ là PC = PC + A. Tuy nhiên, ta vẫn có thể biết được vị trí mà PC sẽ chạy tiếp theo nếu không jump nhờ vào giá trị PC + 4 được gán vào thanh ghi rd.
+
+jalr rd, rs1, A
+Câu lệnh này thực hiện 2 chức năng đó là 
+Gán giá trị PC+4 vào thanh ghi rd.
+Gán giá trị PC = Reg{rs} + A.
+Câu lệnh này khác câu lệnh jal ở trên chỗ giá trị của PC được gán bằng Reg{rs} + A thay vì bằng PC + A.
+
+Câu lệnh lui.
+Ý nghĩa của câu lệnh này là nhằm gán một số rất lớn vào một thanh ghi.
+Thông thường để gán 1 số vào 1 thanh ghi ta sẽ dùng lệnh add.
+Chẳng hạn:
+addi r4, r4, 0
+addi r5, r4, A
+Trong đó A (tối đa 12 bit và được mở rộng bit dấu) là số muốn add vào thanh ghi r5.
+Tuy nhiên trong câu lệnh add, giá trị của A bị giới hạn bởi 12 bit data. Nghĩa là tối đa chúng ta gán vào thanh ghi r5 là 000007FE (Các số 0 đầu là do mở rộng bit).
+Với câu lệnh lui ta có thể gán số lớn nhất là FFFFF000 vào thanh ghi r5.
+Cú pháp:
+lui x10, K
+K là số có tối đa 20 bit data. Với câu lệnh lui, K được mở rộng về bên phải 12 bit data nữa là 32 bit.
+Mình lấy ví dụ:
+lui x10, 0xFE06F
+Nghĩa là mình sẽ gán được 1 số có giá trị 0xFE06F000 vào thanh ghi x10, Trong đó 12 bit cuối (0x000) bên phải được tự động mở rộng.
+
+Ngoài ra ta còn có câu lệnh li (gán có dấu)
+li x10, 0xFF04FEEF
+
+Câu lệnh auipc
+Label: auipc rd, A
+Câu lệnh này có nghĩa là gán giá trị PC=PC+A (A được mở rộng 12 bit bên phải giống câu lệnh lui bên trên) và lưu giá trị đó vào thanh ghi rd.
+Câu lệnh này dùng giống như các câu lệnh nhảy tuy nhiên ta dùng với một đoạn code dài mà các câu lệnh nhảy khác như jal, beq,..v… không đáp ứng được.
+
+
+ 
+
+
+
+
+
+
+
+
