@@ -1,0 +1,69 @@
+[Design][Thiết kế CPU 32 bit] [Bài 1] Các khái niệm cơ bản trong thiết kế CPU RISC-V 32 bit
+Tác giả: TrongTran
+Ngày: 16/09/2019
+
+
+Đây là chuỗi bài hướng dẫn thiết kế 1 CPU RISC-V 32 bit.
+Đầu tiên chúng ta cần tìm hiểu một số khái niệm cơ bản trong thiết kế CPU RISC-V 32 bit.
+1.	Mã máy
+Máy tính không thể nào hiểu được các câu lệnh bậc cao mà bạn vẫn hay viết hằng ngày. Những câu lệnh đó mang các từ gợi nhớ và đa dạng (Tuỳ loại ngôn ngữ mà có các tập lệnh khác nhau). Nó giúp cho lập trình viên dễ dàng ghi nhớ, tránh sai sót và nhầm lẫn trong quá trình code.  Để chạy được các câu lệnh đó ta phải sử dụng 1 trình biên dịch để chuyển từ đoạn code viết bằng ngôn ngữ bậc cao sang mã máy. 
+Mã máy là đoạn mã chỉ bao gồm các bit 0 hoặc 1 mang các ý nghĩa nhất định tuỳ vào cách định nghĩa của CPU.
+Ví dụ :
+CPU 16 bit sẽ có mã của câu lệnh “add” khác với CPU 32 bit.
+Ưu điểm của ngôn ngữ bậc cao so với mã máy.
+Hãy tưởng tượng bạn chỉ code với mã máy và làm việc với các chỉ số 0/1 thì công việc sẽ trở nên khó khăn hơn, khó quan sát, dễ nhầm lẫn và tốn nhiều thời gian để học.
+Ngôn ngữ bậc cao giúp bạn dễ nhớ, học và làm việc nhanh hơn.
+
+2.	Thanh ghi.
+Ta có thể nhìn nhận như sau:
+CPU 16 bit: Sẽ có 16 thanh ghi (Từ R0 -> R15).
+CPU 32 bit: Sẽ có 32 thanh ghi để xử lí (từ R0 -> R31).
+CPU 64 bit: Sẽ có 64 thanh ghi (Từ R0 -> R63).
+Trong đó sẽ có một vài thanh ghi mang các giá trị đặc biệt không đổi. Nghĩa là dù ta có WRITE gì vào đi nữa thì giá trị thanh ghi đó vẫn không thay đổi.
+Chẳng hạn trong bài này. Mình thiết kế CPU 32 bit có thanh ghi R0 luôn mang giá trị 0.
+
+Ngoài ra, sẽ có các vùng thanh ghi thực hiện các nhiệm vụ đặc biệt chẳng hạn như vùng chứa các biến tạm trong tính toán, vùng chứa flag ..v…v.
+
+3.	Đơn vị
+Như các bạn đã biết có rất nhiều cách định nghĩa 1 word:
+1 word = 16 bit.
+1 word = 32 bit.
+1 word = 64 bit.
+….
+Trong bài này do chúng ta thiết kế CPU 32 bit nên mình sẽ quy định 
+1 word = 4 byte = 32 bit.
+1 half word = 2 byte = 16 bit.
+
+4.	Cách tính địa chỉ read/write.
+Trong memory mỗi một đơn vị địa chỉ sẽ chứa tối đa 8 bit data = 1 byte data.
+
+Nghĩa là nếu bạn muốn đọc dữ liệu 1 byte data từ memory và đọc 2 vùng data trên memory liên tục nhau thì bạn cộng địa chỉ lên 1 đơn vị.
+Địa chỉ 01: Data AA (AA: mã hex 8 bit data).
+Địa chỉ 02: Data BB (BB mã hex 8 bit data).
+
+Trong trường hợp ta không READ/WRITE 1 lần 8 bit data mà READ/WRITE 1 lần 32 bit thì nên cộng địa chỉ với 4.
+
+5.	Big endian và little endian
+Big Endian
+Least Significant bit (Bit có trọng số thấp nhất trong chuỗi dữ liệu) luôn được lưu ở ô nhớ có địa chỉ lớn nhất còn Most Significant Bit (Bit có trọng số cao nhất trong chuỗi dữ liệu) được lưu ở ô nhớ có địa chỉ nhỏ nhất trong vùng lưu trữ của biến.
+Little Endian
+Ngược lại với các nền tảng sử dụng big endian, ở các nền tảng sử dụng little endian, LSB luôn được lưu ở ô nhớ có địa chỉ nhỏ nhất còn MSB được lưu ở ô nhớ có địa chỉ lớn nhất trong vùng lưu trữ của biến.
+
+Bài tiếp theo chúng ta sẽ tìm hiểu về tập lệnh assembly trong thiết kế CPU RISC-V 32 bit.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
