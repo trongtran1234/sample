@@ -1,0 +1,153 @@
+Phân biệt 2 câu lệnh sll và slt, slti
+Ý nghĩa của câu lệnh sll chỉ đơn giản là shift left giá trị chứa trong thanh ghi.
+Mình lấy ví dụ:
+
+rs1 = 8’b10001010 (Ở đây mình giả sử các thanh ghi chứa 8 bit data chứ không phải 32 bit cho bạn dễ nhìn thấy).
+rs2 =8’b00000010 = 2.
+sll rd, rs1, rs2
+Có nghĩa là shift giá trị chứa trong thanh ghi rs1 đi 2 lần
+Rd = 8’b10001010 << 2 = 8’b00101000
+Nó đơn giản vậy thui.
+Tương tự ta có câu lệnh slli
+sll rd, rs1, A
+A là một số integer mình lấy ví dụ:
+Rs1 = 8’b10001010 (Ở đây mình giả sử các thanh ghi chứa 8 bit data chứ không phải 32 bit cho bạn dễ nhìn thấy).
+A  = 2.
+Có nghĩa là shift giá trị chứa trong thanh ghi rs1 đi 2 lần
+Rd = 8’b10001010 << 2 = 8’b00101000
+
+Bây giờ chúng ta cùng tìm hiểu câu lệnh slt nhé:
+Slt nghĩa là “set if less than” từ “s” đầu không phải là shift đâu nhé. 
+slt rd, rs1, rs2
+Câu lệnh trên có nghĩa là nếu giá trị chứa trong thanh ghi rs1 nhỏ hơn giá trị chứa trong rs2 thì giá trị thanh ghi rd sẽ được set đến 1, Ngược lại là 0.
+Mình lấy ví dụ:
+Mình có x5 chứa giá trị 9, x6 chứa giá trị 10.
+slt x1, x5, x6
+Sau khi thực hiện lệnh này vì 9 < 10, nên x1 sẽ được set = 1 (x1 chứa giá trị 1).
+Câu lệnh slti: Câu lệnh này giống với câu lệnh slt nhưng thay rs2 bằng một số nguyên.
+Mình lấy ví dụ:
+Mình có x5 chứa giá trị 9
+
+Slti x1, x5, 6
+Vì 9 > 6 nên giá trị x1 sẽ bằng 0.
+
+
+[Design][Thiết kế CPU 32 bit] [Bài 2] Tìm hiểu datapath và cấu trúc của các câu lệnh nhóm R-format  (ADD, SUB, OR, XOR,SLL…) trong thiết kế RISC-V
+Tác giả: TrongTran
+Ngày: 17/09/2019
+
+Tài liệu tham khảo: www-inst.eecs.berkeley.edu/~cs61c/fa18/img/riscvcard.pdf và tài liệu học tập từ trường đại học Bách Khoa TP.HCM (Bộ môn Điện-Điện tử).
+
+Đây là một bài nằm trong chuỗi bài hướng dẫn thiết kế 1 CPU RISC-V 32 bit.
+
+Như các bạn đã biết, trong bài trước mình đã hướng dẫn chi tiết về tập lệnh assembly trong thiết kế RISC-V 32 bit.
+Trong bài này, Mình sẽ đi vào phân tích chi tiết cấu trúc cơ bản của 1 RISC-V 32 bit đơn chu kì.
+Các bạn lưu ý cấu trúc trong bài này chỉ dành riêng cho các câu lệnh “add, sub, and, or ,xor, sll, srl, sra, slt”. 
+Các câu lệnh khác mình sẽ nói trong bài tiếp theo.
+ 
+ Nhóm lệnh trên còn gọi là nhóm lệnh R-Format.
+Vì chúng ta đang thiết kế RISC-V 32 bit nên một câu lệnh mã máy hoàn chỉnh sẽ có 32 bit.
+Cú pháp nhóm câu lệnh R-format là:
+instruction rd, rs1, rs2
+Trong đó “instruction”: là các lệnh “add, or, xor….” trong bảng trên.
+rd, rs1, rs2 : là các thanh ghi.
+
+Với các câu lệnh trên, hệ thống của chúng ta sẽ thực hiện 2 tác vụ đó là:
+−	Reg[rd] = Reg[rs1] xxx Reg[rs2]
+−	PC = PC + 4
+Trong đó xxx là một phép tính +/-/&/|/^/… tuỳ vào mã lệnh mà ta sẽ có phép tính thích hợp.
+Như vậy ta có cấu trúc của 1 RISC-V cho nhóm câu lệnh R-format như bên dưới:
+ 
+
+
+Đầu tiên mình sẽ giải thích cơ bản từng khối như sau:
+
+Khối IMEM
+
+IMEM là khối memory chứa đoạn mã máy cần thực thi (1 chương trình nào đó chẳng hạn).
+Ví dụ:
+
+100011….0  // PC = 0 với 8 bit data (8 bit 0/1 trên 1 hàng)
+000111….0  // PC = 1 với 8 bit data
+….
+000111….1  // PC = n với 8 bit data
+
+Như vậy khi ghép từ “PC = 0” đến “PC = 3”, Ta được 1 câu lệnh 32 bit hoàn chỉnh (Mỗi dòng PC có 8 bit data, 4 dòng là 8x4 = 32 bit data).
+
+Câu lệnh tiếp theo là PC + 4, PC + 8….v..v.
+
+Một định dạng khác của IMEM đó là:
+
+000……1 // PC = 0 với 32 bit data (32 bit 0/1 trên 1 hàng)
+100……0 // PC = 4 với 32 bit data
+ 
+Điều này vẫn giống cách định nghĩa ở trên tuy nhiên mỗi dòng sẽ có 32 bit.
+
+Nhiệm vụ chính của khối IMEM này đó là chứa đoạn lệnh cần thực thi.
+
+Input của khối IMEM:
+Giá trị của PC (0/4/8/12/…) nên là bội của 4.
+
+Output của khối IMEM là:
+Đoạn mã máy 32 bit.
+
+Đoạn mã này sẽ đi vào 2 khối đó là khối REG và khối CONTROL LOGIC.
+
+Khối REG
+Khối REG là khối chứa các giá trị của 32 thanh ghi từ R0 -> R31. 
+Chức năng chính: 
+Đọc giá trị của thanh ghi rs1/rs2 và output đến khối ALU.
+Ghi giá trị vào thanh ghi rd.
+
+Input: 
+inst[11:7] tên thanh ghi rd.
+Ví dụ inst[11:7] = 5’b10000 = 16. Nghĩa là ta đang truy cập vào thanh ghi x16 trong bộ 32 thanh ghi.
+DataD[31:0] là giá trị cần ghi vào thanh ghi rd bên trên.
+
+Inst[19:15] tên thanh ghi rs1.
+Inst[24:20] tên thanh ghi rs2.
+
+Output:
+Có 2 output đó là giá trị chứa trong 2 thanh ghi rs1, rs2.
+ 
+Khối REG sẽ output 2 tín hiệu đó là Reg[rs1] và Reg[rs2] là giá trị chứa trong 2 thanh ghi rs1 và rs2 vào bộ ALU.
+
+
+Khối CONTROL LOGIC
+Khối CONTROL LOGIC là khối điều khiển toàn bộ hệ thống. Dựa vào 1 lệnh mã máy để output các giá trị điều khiển cho các khối khác.
+
+Input:
+Là toàn bộ 32 bit từ khối IMEM vào.
+
+Output:
+Là các tín hiệu điều khiển các khối khác.
+
+Bộ ALU
+Khối ALU là bộ xử lí trung tâm thực hiện các phép toán. 
+
+Input:
+Reg[rs1] là giá trị chứa trong thanh ghi rs1.
+Reg[rs2] là giá trị chứa trong thanh ghi rs2.
+Tín hiệu điều khiển ALUSel : ALU nhận tín hiệu điều khiển từ khối CONTROL LOGIC để thực hiện các phép toán như add/sub/or/xor ..v..v.
+
+Output:
+Giá trị kết quả ngõ ra của khối ALU.
+Giá trị này sẽ được nối vào chân DataD của khối REG. Tại đây tín hiệu RegWEn sẽ bằng 1 nghĩa là DataD[31:0] sẽ được ghi vào thanh ghi rd.
+
+Mình tóm lại như sau:
+Lúc bắt đầu PC = 0 và gửi giá trị PC = 0 vào khối IMEM.
+Khối IMEM sẽ output ra một lệnh mã máy 32 bit tại địa chỉ PC = 0.
+Lệnh mã máy này sẽ được nối đến 2 khối:
+Các bit từ [11:7] (thanh ghi rd) , [19:15] (thanh ghi rs1) , [24:20] (thanh ghi rs2) của câu lệnh  mã máy sẽ đi vào khối REG.
+Đồng thời toàn bộ 32 bit này sẽ đi vào khối control logic. 
+Các giá trị trong thanh ghi rs1 và rs2 được output từ khối REG sẽ đi vào khối ALU.
+Tại đây khối ALU sẽ cộng/trừ/or/xor/.. 2 giá trị đó lại và gửi kết quả ngược lại khối REG để lưu vào thanh ghi rd.
+Lúc này tín hiệu PC sẽ bằng PC + 4 và vòng ngược lại chân input của khối PC.
+Như vậy, chúng ta đã tìm hiểu cấu trúc của RISC-V cho các câu lệnh nhóm R-Format.
+ 
+
+
+
+
+
+
