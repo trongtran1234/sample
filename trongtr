@@ -1,0 +1,123 @@
+[Unity][Game 2D][Bài 2] Hướng dẫn tạo 1 game bắn súng 2D đơn giản với Unity  
+
+
+Giới thiệu
+Trong phần thứ hai của hướng dẫn này, chúng ta sẽ cùng nhau tìm hiểu cách:
+
+Tạo ra các thiên thạch ngẫu nhiên (là các đối tượng mà tên lửa cần tiêu diệt).
+Di chuyển các thiên thạch này bằng cách áp dụng các lực.
+Phá hủy những thiên thạch này khi va chạm với đạn.
+
+Tiêu diệt mục tiêu
+
+Bây giờ tên lửa của chúng ta có thể bắn ra đạn, việc chúng ta cần làm tiếp theo đó là phá huỷ các vật thể va chạm với tên lửa.
+Mình sẽ tạo một đối tượng mới được sử dụng làm mục tiêu (Là các thiên thạch).
+
+Từ cửa sổ Project, chọn (Create Sprites | Square)
+Đổi tên mục tiêu sprite mới này.
+Kéo và thả sprite này vào màn hình scene.
+
+
+Điều này sẽ tạo ra một đối tượng mới trong cửa sổ scene; Chúng ta tiến hành đổi tên đối tượng mới này.
+
+Thêm một BoxCollider2D vào đối tượng này (tức là, chọn Components | Physics2D | BoxCollider2D). 
+Khi thêm thành phần vật lí cho đối tượng có nghĩa là hiện tại đối tượng của chúng ta có thể va chạm với những đối tượng khác.
+
+Bây giờ chúng ta sẽ tạo một tag mới cho đối tượng này. Tag này sẽ giúp xác định từng đối tượng trong scene và để xem đối tượng mà viên đạn (hoặc tên lửa) đang va chạm với nhau.
+Chọn đối tượng thiên thạch trong cửa sổ hierarchy.
+     Trong cửa sổ Inspector, nhấp vào menu thả xuống có tên Untagged như được mô tả trên hình tiếp theo.
+Từ menu kéo xuống lựa chọn option “Add tag…”.
+Trong cửa sổ mới, nhấp vào nút + nằm bên dưới nhãn “Tags/List is Empty”.
+
+Đặt tên cho tag của bạn (tức là, mục tiêu), sử dụng trường ở bên phải của nhãn Tag 0.
+Nhấn phím Enter/Return trên bàn phím để lưu tag mới của bạn.
+ Chọn lại mục tiêu đối tượng thiên thạch trong cửa sổ hierarchy, trong inspector , chọn tag mà bạn vừa tạo ra.
+
+Cuối cùng nhưng không kém phần quan trọng, chúng ta sẽ tạo một prefab từ mục tiêu này bằng cách kéo và thả mục tiêu đối tượng vào cửa sổ Project.
+
+Tiếp theo, chúng ta tạo một tập lệnh mới sẽ được liên kết với viên đạn (hoặc tên lửa), do đó, khi va chạm với mục tiêu, mục tiêu này sẽ bị phá hủy (dựa trên tag của nó).
+
+Chúng ta tạo một tập lệnh mới có tên Bullet: từ cửa sổ Project, chọn Create | C # scripts.
+   
+     Thêm đoạn code sau đây vào nó:
+void OnCollisionEnter2D(Collision2D coll)
+ 
+{
+    if (coll.gameObject.tag == "target")
+    {
+        Destroy (coll.gameObject);
+        Destroy (gameObject);
+    }
+}
+
+Trong đoạn code bên trên ta thực hiện một số tác vụ như sau:
+
+Phát hiện các vật thể va chạm với viên đạn.
+Khi điều này xảy ra, kiểm tra xem đối tượng này có phải là mục tiêu không; nếu đây là mục tiêu, mục tiêu này sau đó bị phá hủy.
+
+Viên đạn cũng bị phá hủy trong trường hợp này.
+
+
+Chúng ta lưu tập lệnh có tên Bullet và kiểm tra xem nó có lỗi hay không.
+Nếu không có lỗi, Tiến hành kéo và thả nó vào prefab có tên Bullet, trong cửa sổ Project.
+
+Tiếp theo chúng ta sẽ cần thêm một sự va chạm vào prefab Bullet của mình, để nó thực sự va chạm với các đối tượng khác:
+
+     Chọn prefab “bullet”.
+     Từ menu trên cùng, chọn Components | Physics2D | BoxCollider2D.
+
+Bây giờ bạn có thể kiểm tra trò chơi của mình:
+
+     Di chuyển đối tượng thiên thạch ngay phía trên tên lửa, như được minh họa trong hình tiếp theo.
+
+Nhấn phím cách và kiểm tra xem, khi va chạm giữa viên đạn và mục tiêu, cả hai vật thể đều bị phá hủy.
+
+Lưu ý rằng vì bạn sẽ bắn một số viên đạn, chúng ta có thể chọn phá hủy một viên đạn sau 10 giây (trước thời gian này nó sẽ phải bắn trúng mục tiêu nếu không viên đạn sẽ tự biến mất sau 10s), bằng cách sửa đổi tập lệnh Bullet như sau:
+
+void Start ()
+{
+    Destroy (gameObject, 10);
+}
+
+Bạn có thể kiểm tra để thấy rằng sau 10 giây viên đạn có bị phá hủy hay không.
+
+Trước khi tiếp tục,  các bạn lưu lại scene này lại. Bạn chọn (File  | Save Scene As) từ menu trên cùng và lưu lại với tên level1. Bạn cũng có thể lưu dự án của mình (File | Save project).
+
+Tiếp theo, chúng ta sẽ chỉ rõ 2 loại mục tiêu khác nhau; đó là: một mục tiêu di chuyển sẽ di chuyển xuống dưới và người chơi sẽ phải tránh hoặc tiêu diệt.
+
+ Trong cửa sổ project, Chúng ta tiến hành sao chép prefab “target” mà chúng ta vừa tạo (nghĩa là chọn prefab “target” và nhấn CTRL + D).
+ Đổi tên prefab vừa tạo thành move_target.
+Chọn prefab move_target trong cửa sổ hierarchy và thêm thành phần RigidBody2D vào nó (nghĩa là chọn Component | Phisics2D | RigidBody2D).
+Trong cửa sổ Inspector, đặt thuộc tính Gravity Scale (cho thành phần Rigidbody2D) thành 0, như được minh họa trên hình tiếp theo. Điều này là để đối tượng không rơi vô thời hạn (vì nó là chế độ xem từ trên xuống)
+Tiếp theo, chúng ta sẽ tạo một tập lệnh  C# để liên kết với move_target nhầm điều chỉnh vận tốc rơi xuống của move_target. Tạo tập lệnh C # mới có tên là MoveTarget.
+ Thêm dòng code sau vào function “start” để điều chỉnh vận tốc ban đầu.
+void Start ()
+{
+    GetComponent ().velocity = Vector2.down * 10;
+}
+
+
+
+Trong đoạn code trên, chúng ta truy cập vào thành phần Rigidbody2D của đối tượng được liên kết với tập lệnh này (đây sẽ là mục tiêu di động), sau đó đặt vận tốc rơi xuống của đối tượng.
+
+Bây giờ bạn có thể lưu tập lệnh của mình, kiểm tra xem nó không có lỗi và kéo và thả tập lệnh vào prefab có tên là move_target.
+
+Để chúng tôi có thể kiểm tra cảnh, vui lòng kéo và thả prefab move_target vào chế độ xem Cảnh và phát cảnh, bạn sẽ thấy mục tiêu cụ thể này di chuyển xuống dưới
+
+
+
+[Unity][Game 2D][Bài 3] Hướng dẫn tạo 1 game bắn súng 2D đơn giản với Unity  
+
+Tạo mục tiêu một cách ngẫu nhiên
+Trong bài này mình sẽ hướng dẫn bạn cách làm cho các thiên thạch xuất hiện một cách ngẫu nhiêu. Hay đúng hơn là các thiên thạch sẽ rơi ngẫu nhiên từ trên xuống dưới. Chúng ta sẽ làm như sau:
+
+     Chúng ta sẽ tạo ra một vật thể trống sẽ sinh ra những mục tiêu đang di chuyển này.
+     Chúng sẽ được khởi tạo tại các khoảng thời gian đều đặn và tại các vị trí ngẫu nhiên.
+     Chúng tôi cũng sẽ đảm bảo rằng các mục tiêu di động được sinh ra trong chế độ xem hiện tại (tức là, tương đối gần với người chơi để chúng có thể được chụp và hiển thị bằng camera).
+
+Vì vậy, hay thực hiện ngay bây giơ:
+
+     Vui lòng tạo một đối tượng trống mới có tên là TargetSpawner trong cửa sổ Phân cấp (nghĩa là chọn GameObject | Tạo sản phẩm nào).
+     Tạo tập lệnh C # mới có tên SpawnMovingTarget.
+     Mở kịch bản.
+     Thêm mã sau vào đầu lớp (mã mới in đậm):
