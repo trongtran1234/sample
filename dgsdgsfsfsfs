@@ -1,0 +1,79 @@
+Unity 3D là một công cụ tạo trò chơi mạnh mẽ, dễ sử dụng và quan trọng nhất là miễn phí để tải về! (Có phiên bản trả phí mạnh hơn, nhưng bạn có thể làm được rất nhiều với phiên bản miễn phí.)
+
+Mặc dù tên của nó, Unity có thể được sử dụng cho cả trò chơi 2D và 3D. Bạn có thể lập trình bằng C #, Java hoặc Boo, một ngôn ngữ tương tự như Python. Trong hướng dẫn này, tôi sẽ hướng dẫn bạn qua môi trường Unity và chỉ cho bạn cách tạo một trò chơi đơn giản trong Unity.
+
+Bạn không cần bất kỳ kinh nghiệm mã hóa nào để tuân theo Điều này; tuy nhiên, điều này được khuyến nghị vì bạn có thể dễ dàng kiểm chứng mã của mình hơn nếu bạn có một số loại ngôn ngữ mã hóa.
+
+Hướng dẫn này được dựa trên hướng dẫn RollaBall trên trang web Unity. Có một số lượng lớn các hướng dẫn miễn phí có thể được tìm thấy trên trang web hướng dẫn Unity. Tôi đã tạo ra InInttable này chủ yếu cho thực hành của riêng tôi với Unity, nhưng cũng để bổ sung các hướng dẫn bằng video với một bộ hướng dẫn bằng văn bản từng bước.
+
+
+
+
+Mở Unity3D
+
+Đóng cửa sổ "Chào mừng đến với Unity" bật lên theo mặc định khi bạn mở Unity.
+
+Bấm vào Tệp - Dự án mới
+
+Chọn vị trí cho dự án của bạn. Tôi thích sử dụng một thư mục chuyên dụng để chứa tất cả các dự án Unity của mình.
+
+Nhập tên cho dự án của bạn. Trong ảnh chụp màn hình, dự án mới được gọi là "
+
+Xem ảnh chụp màn hình để biết cái này sẽ trông như thế nào trước khi nhấp vào nút Tạo.
+
+Nhấp vào Tạo.
+
+Điều đầu tiên bạn có thể muốn làm là tùy chỉnh bố cục. Mỗi cửa sổ có thể được bấm và kéo vào vị trí. Ngoài ra, bạn có thể sử dụng các bố cục mặc định được cung cấp với Unity bằng cách nhấp vào thanh thả bên dưới Bố cục ở phía trên bên trái màn hình. Tôi thích bố cục Cao, mặc dù tôi thấy hữu ích khi đặt chế độ xem Trò chơi bên dưới chế độ xem Cảnh.
+
+Có năm cửa sổ chính mà bạn đang sử dụng hầu hết thời gian với Unity. Chúng là các cửa sổ Cảnh, Trò chơi, Phân cấp, Dự án và Thanh tra. Xem năm hình ảnh ở đầu bước cho hình ảnh của mỗi cửa sổ.
+
+Cảnh - đây là nơi làm cho trò chơi xảy ra. Nó cho thấy những yếu tố bạn có trong trò chơi của bạn và nơi chúng có liên quan với nhau. Có một khối ở góc trên bên phải hiển thị hướng không gian của cảnh.
+
+Trò chơi - hiển thị chế độ xem mà camera chính nhìn thấy khi trò chơi đang chơi. Bạn có thể kiểm tra trò chơi của mình trong cửa sổ này bằng cách nhấp vào nút Phát ở trên cùng, ở giữa màn hình.
+
+Phân cấp - liệt kê tất cả các yếu tố bạn đã thêm vào cảnh. Đây là camera chính theo mặc định. Bạn có thể tạo các yếu tố mới bằng cách nhấp vào Tạo và chọn loại đối tượng bạn muốn. Điều này cũng có thể được thực hiện bằng cách sử dụng menu thả xuống GameObject ở đầu màn hình.
+
+Project - hiển thị các tệp đang được sử dụng cho trò chơi. Bạn có thể tạo thư mục, tập lệnh, v.v. bằng cách nhấp vào Tạo bên dưới cửa sổ Dự án.
+
+Thanh tra - đây là nơi bạn tùy chỉnh các khía cạnh của từng yếu tố trong cảnh. Chỉ cần chọn một đối tượng trong cửa sổ Phân cấp hoặc nhấp đúp vào một đối tượng trong cửa sổ Cảnh để hiển thị các thuộc tính của nó trong bảng Inspector.
+
+Bấm vào Tệp - Lưu Cảnh. Lưu cảnh trong thư mục [Tên dự án] - Tài sản. Tài sản là một thư mục được tạo sẵn mà bạn sẽ muốn lưu trữ các cảnh và kịch bản của mình. Bạn có thể muốn tạo một thư mục có tên là Cảnh trong Tài sản vì thư mục Tài sản có thể bị lộn xộn.
+
+Lưu cảnh dưới dạng Cảnh hoặc Chính hoặc đại loại như thế.
+
+Nhấp vào Tệp - Xây dựng Cài đặt.
+
+Thêm cảnh hiện tại để xây dựng.
+
+Chọn nền tảng mong muốn. Có rất nhiều tùy chọn, bao gồm máy tính, hệ thống trò chơi và điện thoại thông minh, nhưng nếu bạn lần đầu tiên tạo dự án, rất có thể bạn sẽ muốn chọn Trình phát Web hoặc PC / Mac / Linux độc lập.
+
+Nhấp vào Cài đặt trình phát ở cuối cửa sổ Cài đặt bản dựng. Điều này sẽ mở các tùy chọn Cài đặt Trình phát trong Thanh tra. Tại đây, bạn có thể thay đổi tên công ty, tên sản phẩm (trò chơi), biểu tượng mặc định, v.v.
+
+Đóng cửa sổ Build Settings. Bạn sẽ trở lại điều này khi bạn đã sẵn sàng để kết thúc trò chơi của mình.
+Cách đơn giản nhất để tạo một sân khấu trong Unity là thêm hình khối.
+
+Để thực hiện việc này, hãy đi tới Đối tượng trò chơi - Tạo khác - Khối hoặc sử dụng menu Tạo trong cửa sổ Phân cấp. Thêm một khối lập phương.
+
+Đặt lại biến đổi khối vuông bằng cách nhấp chuột phải vào Biến đổi trong bảng điều khiển Thanh tra. Đó là một thực hành tốt để làm điều này bất cứ khi nào bạn tạo một Game Object mới.
+
+Chọn khối trong Phân cấp. Đổi tên nó thành Tường Tường bằng cách nhấp đúp vào tên của nó trong Phân cấp hoặc sử dụng bảng Inspector.
+
+Chia tỷ lệ khối lập phương theo hướng X để làm cho nó dài và giống như bức tường.
+
+Nhấp chuột phải vào Tường Tường trong bảng phân cấp và nhân đôi ba lần để bạn có bốn bức tường. Nó sẽ trông giống như bạn chỉ có một bức tường vì chúng giống hệt nhau và do đó chiếm cùng một điểm trong không gian. Kéo chúng vào vị trí và / hoặc sử dụng các tùy chọn biến đổi cho mỗi khối để thực hiện sắp xếp trông giống như một đấu trường.
+
+Lưu ý: Để xem xung quanh chế độ xem cảnh, nhấp vào nút chuột giữa để xoay và cuộn để phóng to và thu nhỏ. Nhấp và kéo trong khi giữ phím ALT để xoay chế độ xem.
+
+Tạo Đối tượng trò chơi trống, sử dụng trình đơn thả xuống Đối tượng trò chơi (Tạo sản phẩm nào) ở đầu màn hình. Gọi nó là Giai đoạn.
+
+Chọn tất cả bốn trò chơi Tường Tường và kéo chúng vào Đối tượng trò chơi trên sân khấu.
+
+Thêm một đối tượng trò chơi máy bay bằng cách chọn Tạo trong bảng phân cấp và sử dụng nó cho sàn. Đổi tên thành "Tầng" và kéo nó dưới Giai đoạn trong Phân cấp.
+
+Lưu ý: bạn cần nhấn enter sau khi đổi tên, nếu không, thay đổi có thể không có hiệu lực.
+
+Tạo cho sàn biến đổi -0,5 theo hướng Y để đảm bảo nó thẳng hàng với bốn bức tường.
+
+Tạo tỷ lệ của sàn theo các hướng X, Y và Z 1/10 của tỷ lệ bạn đã sử dụng để định kích thước cho các bức tường.
+
+
