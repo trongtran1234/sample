@@ -1,0 +1,81 @@
+https://community.arm.com/developer/ip-products/system/b/soc-design-blog/posts/leveraging-pci-express-to-enable-external-connectivity-in-arm-based-socs
+
+
+[SoC][Design] Tìm hiểu về giao tiếp PCIe trong hệ thống SoC
+
+Trong quá trình tìm hiểu về IPSec, Có một vấn đề mình luôn bâng khuâng đó là giao tiếp giữa ARM và router nên chọn chuẩn gì. Và cuối cùng thì mình đã chọn chuẫn PCIe vì nó có rất nhiều ưu điểm. Đây là một bài mà mình dịch, tìm hiểu, soạn thảo lại từ một số nguồn tài liệu từ nước ngoài.
+Chúng ta bắt đầu nhé.
+
+Để hỗ trợ khối lượng dữ liệu ngày càng lớn, các nhà thiết kế SoC cho các ứng dụng mạng và điện toán hiệu năng cao phải tận dụng giao diện chip-to-chip nhầm cho phép truyền thông lượng dữ liệu cao trong khi giảm thiểu độ trễ và quản lý năng lượng hiệu quả.
+
+PCI Express (PCIe) là chuẩn kết nối chip-to-chip cho nhiều ứng dụng từ CPU với hiệu suất cao. PCIe lần đầu tiên được biết đến như một hệ thống bus trong máy tính cá nhân, nhưng ngày nay, với các liên kết rộng hơn, khả năng tính toán phân tán và tốc độ dữ liệu cao hơn, PCIe cho phép kết nối với các thành phần bên ngoài trong hệ thống SoC (cho các máy chủ hiệu suất cao). Bài viết này giải thích kiến trúc PCIe và cách PCIe có thể được sử dụng để cung cấp kết nối bên ngoài vào trong một hệ thống SoC (Giao tiếp với Arm).
+
+Kiến trúc PCIe
+
+PCIe là một giao thức lớp bao gồm một lớp vật lý, lớp liên kết dữ liệu và lớp giao dịch, như trong Hình 1.
+ 
+
+Kết nối giữa hai thiết bị PCIe được gọi là một “link” và trong “link” đó là các “lane” (làn) riêng lẻ - mỗi lane gồm hai cặp vi sai di chuyển dữ liệu giữa các thiết bị. 
+Ta có 1 ví dụ như trong Hình bên trên.
+Trong một lane - một cặp dữ liệu di chuyển từ đầu ra máy phát (TX) trên thiết bị bên trái sang đầu vào máy thu (RX) trên thiết bị bên phải và cặp khác di chuyển dữ liệu từ đầu TX của thiết bị bên phải vào đầu RX của thiết bị bên trái.
+
+
+Bây giờ ta sẽ tìm hiểu các lớp từ dưới lên trong giao tiếp PCIe.
+Ta có 3 lớp như bên dưới:
+•	Lớp vật lý
+•	Lớp liên kết dữ liệu
+•	Lớp giao dịch
+Lớp vật lý: Chuyển đổi các gói dữ liệu ra thành luồng bit được tuần tự hóa trên tất cả các lane của liên kết. Các chức năng bổ sung bao gồm:
+
+    Bộ đệm và thêm thông tin điều khiển như tiêu đề và/hoặc chuỗi thứ tự để xác định loại dữ liệu
+    Phân chia byte để phân phối các byte truyền riêng lẻ trên tất cả các làn trong liên kết
+    Xáo trộn để phân chia ngẫu nhiên các mẫu dữ liệu nhầm giữ cho dữ liệu lặp đi lặp lại
+
+
+Lớp vật lý ở phía nhận dữ liệu, thực hiện đảo ngược các chức năng đó, với một bổ sung quan trọng. Trước chức năng xắp xếp lại, mô-đun phục hồi dữ liệu và đồng hồ (CDR) tìm kiếm các ký hiệu đã biết trong luồng dữ liệu nhận được để tái tạo tín hiệu clock. Trong đường dẫn nhận này, chúng ta phải bù cho sự khác biệt giữa clock thực tế và đồng hồ thu hồi từ máy phát (TX) và điều này được thực hiện thông qua bộ đệm đàn hồi của Khăn, phục vụ để hấp thụ những khác biệt nhỏ này.
+
+Lớp vật lý PCIe có tỷ lệ cả về chiều rộng, từ một làn đến 32 làn và tốc độ từ từ Gen1, 2.5GT / giây lên đến Gen4 với tốc độ 16GT/giây, cho băng thông mở rộng từ 250MB/s lên đến 64GB/S.
+
+
+Lớp tiếp theo là lớp liên kết dữ liệu, cung cấp các cơ chế đảm bảo kênh dữ liệu đáng tin cậy giữa hai thiết bị được liên kết. Lớp liên kết dữ liệu cung cấp nhiều tính năng bao gồm:
+
+    Các gói lớp liên kết dữ liệu duy nhất (DLLP) là cục bộ của liên kết và được sử dụng để truyền đạt thông tin cụ thể cho lớp này
+    Giao thức ACK / NAK (xác nhận / không xác nhận) để bắt tay các nhóm gói, sao cho các gói bị hỏng được tự động truyền lại
+    Giao thức trạng thái nguồn liên kết cho phép liên kết nhập các trạng thái tiêu thụ điện năng thấp hơn khác nhau khi không truyền dữ liệu
+    Giao thức tín dụng kiểm soát luồng, quảng cáo nhận được bộ đệm sẵn có trong từng trường hợp để đảm bảo hoạt động không tràn, đồng thời đảm bảo sử dụng liên kết hiệu quả để tối đa hóa băng thông
+
+Lớp trên cùng trong giao diện PCIe là lớp giao dịch nơi dữ liệu ứng dụng di chuyển bằng nhiều loại giao dịch khác nhau được hiển thị bên dưới trong Bảng 1. Lớp này trải rộng trên toàn bộ phân cấp PCIe và, không giống như hai lớp thấp hơn, giao tiếp ngoài các thiết bị được liên kết trực tiếp. Các tính năng của Lớp giao dịch bao gồm:
+
+    Xử lý các gói lớp giao dịch (TLP) bao gồm tiêu đề mang loại giao dịch, địa chỉ (vật lý hoặc dịch), thông tin đặt hàng và dữ liệu khi thích hợp
+    Tạo và kiểm tra ECRC - Mã dự phòng chu kỳ từ đầu đến cuối xác nhận rằng mỗi TLP vẫn chưa được xử lý ngay cả khi đã vượt qua nhiều cấp của hệ thống phân cấp PCIe
+    Đặt hàng giao dịch, đảm bảo tính nhất quán của bộ nhớ bằng cách:
+        Bảo toàn lập trình viên Bộ nhớ mô hình Bộ nhớ Thứ tự mô hình, đảm bảo hoạt động chính xác của mô hình người tiêu dùng sản xuất nơi việc đọc dữ liệu phải trả về dữ liệu được ghi gần đây nhất
+        Cho phép một số giao dịch nhất định vượt qua người khác để tránh các tình huống bế tắc
+        Nếu không có điều kiện nào ở trên áp dụng, thì việc đặt hàng giao dịch có thể được nới lỏng tùy chọn để tối đa hóa hiệu suất cho các ứng dụng mô hình tiêu dùng không phải của nhà sản xuất
+    Các loại giao dịch - TLP được nhắm mục tiêu vào không gian địa chỉ bộ nhớ và sử dụng các thông báo để đóng gói các giao thức khác qua PCIe; Bảng 1 định nghĩa các loại giao dịch.
+
+
+
+Kết nối external trong SoC dựa trên chuẩn giao tiếp ARM
+
+Xây dựng một hệ thống SoC dựa trên Arm với giao diện PCI Express đòi hỏi kiến thức sâu về giao thức PCIe, giao thức Arm AMBA®, các vấn đề về sắp xếp , truyền dữ liệu qua các miền clock khác nhau, ánh xạ lỗi, quản lý thẻ, v.v., dẫn đến thời gian phát triển SoC lâu hơn, Các nhà thiết kế có thể khắc phục yếu tố này bằng việc sử dụng IP PCIe của bên thứ 3. 
+Các nhà thiết kế có thể chỉ cần quan tâm các kết nối bên ngoài SoC dựa trên chuẩn giao tiếp AMBA Arm mà không cần quan tâm chuẩn giao tiếp PCIe. Đồng thời với việc sử dụng IP PCIe của bên thứ 3 giúp giảm thời gian verification vì hoạt động của nó đã được chứng minh trên hàng triệu thiết bị, điều này giúp nhà thiết kế tập trung sự chú ý vào các phần design quan trọng hơn của thiết kế SoC. Tích hợp IP PCIe đã được chứng minh giúp vượt qua các thách thức thiết kế như:
+
+ Truyền qua các miền clock khác nhau: IP PCIe thường chạy trên nguồn clock có nguồn gốc từ tốc độ dữ liệu PCIe, do đó tần số 125, 250, 500 hoặc 1000 MHz là phổ biến tùy thuộc vào tốc độ báo hiệu PCIe (2.5GT, 5GT / s, 8GT / s, hoặc 16GT / s), độ rộng giao diện PHY và số lane được triển khai. Clock bên trong của SoC có thể chạy ở tốc độ khác với giao diện PCIe, chẳng hạn như 400, 800 hoặc 1600 MHz và thay đổi mạnh mẽ với tải ứng dụng. IP giao diện PCIe được thiết kế tốt sẽ giúp nhà thiết kế SoC không cần phải xem xét tốc độ xung clock thực tế, trạng thái nguồn liên kết và bộ đệm giao dịch để đảm bảo truyền/nhận không có khe hở trên cả giao diện PCIe và SoC.
+
+ Chuyển đổi giao thức AMBA của Arm sang giao thức TLP PCIe: Các nhà thiết kế SoC phải cẩn thận khớp các băng thông và kích thước băng thông AMBA và PCIe của họ, hoặc chọn IP giao diện PCIe tự động xử lý việc này. 
+Ví dụ, kích thước cụm AMBA có thể lớn hơn kích thước tải trọng tối đa của PCIe TLP (MPS), buộc việc chuyển đổi phải được phân tách thành nhiều TLP ghi PCIe nhỏ hơn. Tương tự, đối với các yêu cầu đọc vượt quá kích thước yêu cầu đọc tối đa PCIe (MRRS), thì cụm phải được phân tách thành nhiều lần đọc TLP nhỏ hơn. Điều này có thêm sự phức tạp của việc yêu cầu thu thập, có khả năng đặt hàng lại và lắp lại nhiều phản hồi đọc PCIe để cung cấp phản hồi AMBA phù hợp với yêu cầu ban đầu. Ngoài ra, có các thuộc tính tiêu đề PCIe TLP không ánh xạ trực tiếp vào các giao thức giao diện AMBA và cần phải được xử lý. Tuy nhiên, các nhà thiết kế có thể ánh xạ một số thuộc tính tiêu đề này thành tín hiệu dải bên AMBA, sử dụng tín hiệu AxUSER và do đó đơn giản hóa quá trình tạo TLP.
+    Dịch từ mô hình đặt hàng giao dịch bộ nhớ AMBA sang / từ mô hình đặt hàng PCIe: Lưu lượng truy cập đi từ SoC chạy qua các giao dịch nô lệ AXI. Tương tự, lưu lượng truy cập vào SoC từ PCIe sẽ chạy qua các giao dịch chính của AXI. Để giao diện nô lệ PCIe đáp ứng mô hình đặt hàng Arm, nó phải xử lý đúng cách:
+        Đọc sau sau khi đọc: vì PCIe không đảm bảo trật tự giữa các lần đọc, nên chức năng này phải được xử lý bằng logic sắp xếp trong Slave.
+        Ghi sau khi ghi: thường có thể đạt được bằng cách ánh xạ tới các giao dịch được đăng không phải thư giãn của PCIe ngoại trừ việc ghi cấu hình PCIe khi việc đặt hàng không được đảm bảo.
+        Đọc sau khi viết: được đảm bảo bởi các quy tắc sắp xếp PCIe, đảm bảo mô hình nhà sản xuất / người tiêu dùng, với một số tùy chọn để thư giãn nếu hiệu suất trong ứng dụng đích yêu cầu và dữ liệu được biết là không liên quan.
+        Viết sau khi đọc: PCIe cho phép ghi vượt qua các lần đọc để tránh các tình huống bế tắc. Tuy nhiên, CPU chủ yếu kiểm soát chức năng này, vì vậy các ứng dụng cần tuân thủ quy tắc này một cách tự nhiên.
+
+Một PCIe AXI Master cần phải tuân thủ các quy tắc đặt hàng tương tự, do đó nó phải có logic đặt hàng rất giống như mô tả ở trên. Một số đường dẫn có thể đơn giản hơn, ví dụ, đường dẫn đọc vào không yêu cầu logic sắp xếp miễn là nó không sắp xếp lại các lần đọc trong nước, vì một nô lệ AXI tuân thủ đảm bảo Đọc sau khi đọc, bằng cách ra lệnh hoàn thành dữ liệu đọc. Để đảm bảo tuân thủ quy tắc Đọc sau khi ghi, logic Master có thể chỉ cần đợi phản hồi ghi trước khi đưa ra đọc.
+
+Một cân nhắc khác cho các nhà thiết kế SoC là nơi đặt (các) công cụ DMA (Truy cập bộ nhớ trực tiếp) của họ. Mặc dù có thể sử dụng một công cụ DMA ngoài luồng chỉ giao tiếp qua kết nối AMBA, có những hạn chế đối với kiến trúc như vậy. Để có được hiệu suất tối đa, động cơ DMA cần hiểu cả AMBA và PCIe. Hãy xem xét một hệ thống trong đó kích thước cụm AMBA nhỏ hơn kích thước tải trọng tối đa của PCIe. Các cụm AMBA được tạo bởi một công cụ DMA trên kết nối AMBA sẽ chuyển thành các gói PCIe nhỏ hơn tối ưu. Việc đặt công cụ DMA bên trong bộ điều khiển PCIe cho phép tổng hợp - trong đó công cụ DMA thu thập một số vụ nổ AMBA vào một gói PCIe duy nhất để tối ưu hóa việc sử dụng và băng thông PCIe. Kết quả tổng số giao dịch giảm cũng có thể trả cổ tức về mức tiêu thụ năng lượng và hiệu quả trên mỗi byte.
+
+
+
+
+
