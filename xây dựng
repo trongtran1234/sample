@@ -1,0 +1,176 @@
+[UVM] Hướng dẫn cách build một môi trường UVM đơn giản nhất cho việc random test
+
+Khi nhắc đến việc build một môi trường UVM hầu hết trong chúng ta đều suy nghĩ rằng nó phải thật sự phức tạp và dĩ nhiên thực tế đúng là như vậy (+_+). Mục đích của việc sử dụng UVM là để veify cho những design phức tạp có nhiều case mà trong đó người verify không thể cover toàn bộ các case bằng các phương pháp thông thường.
+Lúc đó ta cần random test nghĩa là các tín hiệu input được tạo ngẫu nhiên kèm theo các constraint tương ứng với design.
+Chẳng hạn ta cần verify cho 1 bộ cộng 4 bit trong đó hai giá trị đầu vào trong khoảng từ [0:8].
+Vì vậy khi tạo giá trị input để dưa vào design ta cần đặt constraint là cho input >= 0  và input <= 8 .
+
+Mình đã giới thiệu các thành phần đầy đủ của một môi trường UVM trong các bài trước đây các bạn có thể tham khảo tại trang:
+
+Hôm nay mình sẽ hướng dẫn các bạn xây dựng 1 môi trường UVM đơn giản nhất cho một bộ cộng 4 bit. Hay nói đúng hơn là chỉ dùng các thành phần mà thiếu nó môi trường UVM không thể hoạt động được.
+Đó là:
+•	Khối interface
+•	Khối module TOP
+•	Khối UVM_env
+•	DUT
+Trong đó:
+DUT ở đây là design cần verify. DUT nghĩa là design under test.
+Khối interface có chức năng khai báo các giao tiếp giữa DUT và khối UVM_env.
+
+Trước tiên mình có một design đơn giản (Bộ cộng 8 bit) như bên dưới:
+
+module ADD_8BIT (clk, rst_n, a0, b0, result0);
+  input            clk;
+  input rst_n;
+  input [7:0]      a0;
+  input [7:0]      b0;
+  output [8:0] result0;
+  reg [8:0] result0;
+
+  always @ (posedge clk or negedge rst_n)
+    begin
+      if (!rst_n)
+        result0 <= 9’b0_0000_0000;
+      else
+        result0 <= a0 + b0;
+    end
+
+endmodule: ADD_8BIT
+
+Như vậy ở đây ta sẽ liệt kệ tất cả các input/output của DUT để xây dựng khối interface nhé.
+Input bao gồm:
+clk
+rst_n
+a0
+c0
+Output bao gồm 
+result0
+
+Để thành lập khối inteface ở đây ta có 2 cách:
+Cách 1: Bạn define theo kiểu “logic” cho tất cả các port mà không cần định nghĩa input/output cho interface:
+
+interface add_if;
+  logic clk;
+  logic rst_n;
+  logic [7:0] a0;
+  logic [7:0] b0;
+  logic [8:0] result0;
+endinterface: add_if
+
+Với kiểu khai báo này DUT sẽ được connect với interface trong top module. Điều này khá là rườm rà. 
+Các bạn thao khảo cách connect trong bài sau:
+
+Cách 2: Chúng ta khai báo input và output cho interface và tiến hành connect interface với các port của DUT ngay trong file interface bằng dòng lệnh bind.
+interface add_if(
+  input bit clk,
+  input bit rst_n,
+  input [7:0] a,
+  input [7:0] b,
+  input [8:0] result
+);
+
+  clocking cb @(posedge clk or negedge rst_n);
+    output    a;
+    output    b;
+    input     result;
+  endclocking // cb
+
+endinterface: add_if
+Cách khai báo khối clocking khá là hay. Nó sẽ thuận tiện khi bạn có từ 2 DUT cần connect trở lên. Mỗi bộ clocking sẽ tương ứng với một bộ connect giữa interface và DUT.
+Với cách khai báo này chúng ta dùng câu lệnh bind để connect DUT và interface như sau:
+
+bind ADD_8BIT add_if add_if0(
+  .clk(clk),
+.rst_n(rst_n),
+  .a(a0),
+  .b(b0),
+  .result(result0)
+);
+
+Bây giờ ta bắt đầu coding cho top module :
+
+//-----------
+// module top
+//-----------
+module top;
+
+  bit clk;
+  bit rst_n;
+  env environment;
+  ADD_8BIT dut(.clk (clk), .rst_n(rst_n));
+
+  initial begin
+    environment = new("env");
+    // Put the interface into the resource database.
+    uvm_resource_db#(virtual add_if)::set("env",
+      "add_if", dut.add_if0);
+    clk = 0;
+    rst_n = 1;
+    run_test();
+  end
+  
+  initial begin
+    forever begin
+      #(50) clk = ~clk;
+    end
+  end
+  
+  initial begin
+    // Dump waves
+    $dumpvars(0, top);
+  end
+  
+endmodule
+
+Viết cho khối UVM_env như sau:
+import uvm_pkg::*;
+`include "uvm_macros.svh"
+
+//----------------
+// environment env
+//----------------
+class env extends uvm_env;
+
+  virtual add_sub_if m_if;
+
+  function new(string name, uvm_component parent = null);
+    super.new(name, parent);
+  endfunction
+  
+  function void connect_phase(uvm_phase phase);
+    `uvm_info("LABEL", "Started connect phase.", UVM_HIGH);
+    // Get the interface from the resource database.
+    assert(uvm_resource_db#(virtual add_sub_if)::read_by_name(
+      get_full_name(), "add_sub_if", m_if));
+    `uvm_info("LABEL", "Finished connect phase.", UVM_HIGH);
+  endfunction: connect_phase
+
+  task run_phase(uvm_phase phase);
+    phase.raise_objection(this);
+    `uvm_info("LABEL", "Started run phase.", UVM_HIGH);
+    Begin
+repeat (20) begig
+      void'(std::randomize(a));
+      void'(std::randomize(b));
+      @(m_if.cb);
+      m_if.cb.a <= a;
+      m_if.cb.b <= b;
+      m_if.cb.doAdd <= 1'b1;
+      repeat(2) @(m_if.cb);
+      `uvm_info("RESULT", $sformatf("%0d + %0d = %0d",
+        a, b, m_if.cb.result), UVM_LOW);
+    end
+end
+    `uvm_info("LABEL", "Finished run phase.", UVM_HIGH);
+    phase.drop_objection(this);
+  endtask: run_phase
+  
+endclass
+
+Như vậy ta đã có 1 môi trường hoàn chỉnh.
+Trong trường hợp trên mình random tín hiệu input ngõ vào bằng hai dòng
+      void'(std::randomize(a));
+      void'(std::randomize(b));
+
+
+Cùng chạy và kiểm tra waveform nào:
