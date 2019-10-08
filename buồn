@@ -1,0 +1,186 @@
+[UVM] Mô phỏng môi trường UVM đầy đủ thành phần chỉ sử dụng ngôn ngữ system Verilog (Không dùng thư viện uvm)
+
+Tác giả: ThienPham , TrongTran.
+Ngày: 10/08/2019
+
+Có một anh bạn của mình đã hướng dẫn mình từ những ngày đầu mình bắt tay học system Verilog và uvm.
+Đây là một môi trường có đầ đủ các thành phần trong một môi trường random test.
+Tuy nhiên, trong bài này mình không sử dụng thư viện uvm mà sử dụng chỉ ngôn ngữ system Verilog.
+Hi cọng bái viết này sẽ giúp cho những bạn vừa bắt tay vào nghiên cứu system Verilog và uvm hiểu hơn.
+
+Các bạn có thể tham khảo 1 môi trường uvm đơn giản hoàn chỉnh trong bài viết này:
+
+
+Trong bài này mình xét 1 DUT như bên dưới:
+
+module bit_adder ( clk, rst_n, in_a, in_b, carry_in, carry_out, sum );
+
+input  clk;
+input  rst_n;
+input  in_a;
+input  in_b;
+input  carry_in;
+output carry_out;
+output sum;
+
+wire   clk;
+wire   rst_n;
+wire   in_a;
+wire   in_b;
+wire   carry_in;
+reg    carry_out;
+reg    sum;
+
+always @(posedge clk or negedge rst_n) begin
+  if (rst_n == 1'b0) begin //reset is triggered
+    carry_out = 0;
+    sum       = 0;
+  end else begin
+    carry_out <= ( in_a & in_b ) | ( carry_in & ( in_a ^ in_b ));
+    sum       <= in_a ^ in_b ^ carry_in;
+  end
+end
+
+endmodule
+
+Bên trên là bộ bit_adder. Nghĩa là cộng 2 bit lại với nhau.
+Dưới đây là bộ cộng nhiều bit:
+module multi_bit_adder (adder_if.ADDER multi_bit_adder_if);
+
+wire carry_out_0;
+wire carry_out_1;
+
+bit_adder adder_0 (  .clk       (multi_bit_adder_if.clk)
+                    ,.rst_n     (multi_bit_adder_if.adder.rst_n)
+                    ,.in_a      (multi_bit_adder_if.adder.in_a[0])
+                    ,.in_b      (multi_bit_adder_if.adder.in_b[0])
+                    ,.carry_in  (multi_bit_adder_if.adder.carry_in)
+                    ,.carry_out (carry_out_0)
+                    ,.sum       (multi_bit_adder_if.sum[0]) );
+
+bit_adder adder_1 (  .clk       (multi_bit_adder_if.clk)
+                    ,.rst_n     (multi_bit_adder_if.adder.rst_n)
+                    ,.in_a      (multi_bit_adder_if.adder.in_a[1])
+                    ,.in_b      (multi_bit_adder_if.adder.in_b[1])
+                    ,.carry_in  (carry_out_0)
+                    ,.carry_out (carry_out_1)
+                    ,.sum       (multi_bit_adder_if.sum[1]) );
+
+bit_adder adder_2 (  .clk       (multi_bit_adder_if.clk)
+                    ,.rst_n     (multi_bit_adder_if.adder.rst_n)
+                    ,.in_a      (multi_bit_adder_if.adder.in_a[2])
+                    ,.in_b      (multi_bit_adder_if.adder.in_b[2])
+                    ,.carry_in  (carry_out_1)
+                    ,.carry_out (multi_bit_adder_if.carry_out)
+                    ,.sum       (multi_bit_adder_if.sum[2]) );
+
+Endmodule
+
+Với đoạn code bên trên chúng ta đang tiến hành cộng 2 số 3 bit. Kết quả là 1 số 3 bit và 1 biến nhớ.
+Các bạn có thắc mắc cấu trúc này không:
+adder_if.ADDER multi_bit_adder_if
+Không có gì khó hểu cả. Chúng ta đang tiến hành connect bộ “multi_bit_adder” và interface. Điều này giúp chúng ta giảm 1 thao tác.
+
+Khối interface:
+interface adder_if (input wire clk);
+  wire  [2:0]  in_a;
+  wire  [2:0]  in_b;
+  wire         carry_in;
+  wire         rst_n;
+  logic [2:0]  sum;
+  logic        carry_out;
+
+  clocking adder @ (posedge clk);
+    input   in_a;
+    input   in_b;
+    input   carry_in;
+    input   rst_n;
+  endclocking
+
+  clocking testbench @ (posedge clk);
+    input   sum;
+    input   carry_out;
+    output  in_a;
+    output  in_b;
+    output  carry_in;
+    output  rst_n;
+  endclocking
+
+  clocking assertion @ (posedge clk);
+    input   sum;
+    input   carry_out;
+  endclocking
+
+  modport ADDER     (clocking adder, input clk, output sum, output carry_out);
+  modport TESTBENCH (clocking testbench, input clk);
+  modport ASSERTION (clocking assertion
+                     ,input clk
+                     ,input rst_n
+                     ,input in_a
+                     ,input in_b
+                     ,input carry_in);
+
+Endinterface
+
+Khối transaction:
+
+`ifndef ADDER_BASE_OBJECT_SV
+`define ADDER_BASE_OBJECT_SV
+class adder_base_object;
+  rand bit [2:0] in_a;
+  rand bit [2:0] in_b;
+  rand bit carry_in;
+  bit carry_out;
+  bit [2:0] sum;
+  bit rst_n = 1;
+
+   constraint legal {
+     in_a dist { [0  :  7 ] := 100 };
+     in_b dist { [0  :  7 ] := 100 };
+   }
+
+endclass
+`endif
+Class adder_base_object tương tự như class transaction trong môi trường UVM.
+Chức năng khối này là định các input/output giao tiếp giữa sequence và DUT.
+Với những biến input ta sẽ khai báo bởi các key word: “rand” kèm theo các constraint cho việc random đó.
+Khối configuration: 
+
+class Config;
+  integer a;
+  integer b;
+  constraint reasonable {
+    a inside {[0:7]};
+    b inside {[0:7]};
+  }
+Endclass
+
+Thật ra khối này không quan trọng và cũng không thật sự cần trong môi trường UVM. Khối config nhằm 
+Giúp cho người verifier dễ dàng chỉnh sữa các constraint hay thông số đầu vào của khối transaction.
+
+Khối generator:
+
+`ifndef ADDER_TXGEN_SV
+`define ADDER_TXGEN_SV
+class Generator;
+
+  adder_base_object adder_object;
+  mailbox gen2agt;
+
+  function new(mailbox gen2agt);
+//    this.gen2agt = new(); //if use this line. this mail is discarded.
+    this.gen2agt = gen2agt;
+  endfunction
+
+  task run(int count);
+    repeat (count) begin
+      adder_object = new();
+      assert(adder_object.randomize);
+      gen2agt.put(adder_object);
+    end
+  endtask
+
+endclass
+`endif
+
+Khối này nhằm mục đích tạo ra các tín hiệu 
