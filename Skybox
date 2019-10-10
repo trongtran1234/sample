@@ -1,0 +1,21 @@
+[Unity][3D] Cách tạo Skybox trong unity
+Hi, Mình đang loay hoay với 1 dự án game 3D và vấn đề đặt ra với mình là làm thế nào để tạo ra Skybox cho 1 scene.
+Tìm mãi cũng thấy, Hôm này mình sẽ hướng dẫn bạn tạo một Skybox trong unity.
+
+Bắt đầu nào.
+Skybox là một khối lập phương 6 mặt được vẽ đằng sau tất cả đồ họa trong trò chơi. Dưới đây là các bước để tạo một Skybox trực tiếp trong Unity:
+
+     Tạo 6 kết cấu tương ứng với 6 mặt của Skybox (Các kết cấu này có thể là ảnh bầu trời) và đặt chúng vào thư mục Asset dự án của bạn.
+    Việc đầu tiên là bạn cần click vào từng cái kết cấu và quan sát trong cửa sổ inspector. Đối với mỗi kết cấu, bạn cần thay đổi chế độ “wrap mode” từ “Repeat” thành “claim”. Nếu bạn không làm điều này các cạnh của khối lập phương 6 mặt sẽ không khớp với nhau.
+
+Tạo Material mới bằng cách chọn Assets-> create-> Material từ thanh menu.
+Click vào material vừa tạo và quan sát trong cửa sổ inspector.
+     Chọn trình đơn thả xuống “Shader” ở trên cùng của inspector, chọn “Skybox/6  sided”.
+    Kéo thả 6 texture vào từng vị trí tương ứng của kết cấu trong material như hình bên dưới. 
+Như vậy là ta đã có một Skybox rồi.
+Bây giờ ta tìm hiểu cách import Skybox vào Terrain của chúng ta nhé.
+Để gán skybox vào scene chúng ta cần thực hiện một số thao tác bên dưới:
+
+     Chọn Window-> Lighting từ thanh menu.
+     Trong cửa sổ xuất hiện, chọn tab “scene”.
+     Kéo Vật liệu Skybox mới vào khe Skybox.
